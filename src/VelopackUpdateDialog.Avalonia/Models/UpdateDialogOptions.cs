@@ -10,9 +10,6 @@ namespace VelopackUpdateDialog;
 /// </summary>
 public sealed class UpdateDialogOptions
 {
-    /// <summary>既定オプション。<c>new()</c> と同じだがアロケーション削減目的で共有。</summary>
-    public static UpdateDialogOptions Default { get; } = new();
-
     // ---------------- ローカライゼーション ----------------
 
     /// <summary>表示文字列セット。null の場合は <see cref="DefaultStrings.Instance"/>。</summary>

@@ -75,7 +75,7 @@ public partial class UpdateDialogWindow : Window
         bool manualCheck = false,
         CancellationToken cancellationToken = default)
     {
-        var resolvedOptions = options ?? UpdateDialogOptions.Default;
+        var resolvedOptions = options ?? new UpdateDialogOptions();
         var vm = new UpdateDialogViewModel(manager, resolvedOptions);
 
         // 自動チェック時はウィンドウを開かず先にチェック。

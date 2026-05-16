@@ -23,7 +23,7 @@ public sealed partial class UpdateDialogViewModel : ObservableObject
     {
         ArgumentNullException.ThrowIfNull(manager);
         _manager = manager;
-        Options = options ?? UpdateDialogOptions.Default;
+        Options = options ?? new UpdateDialogOptions();
     }
 
     /// <summary>
