@@ -98,7 +98,7 @@ public partial class UpdateDialogWindow : Window
 
                 case UpdateState.Available
                     when !string.IsNullOrEmpty(resolvedOptions.IgnoredTagName)
-                         && string.Equals(vm.AvailableTagName, resolvedOptions.IgnoredTagName, StringComparison.Ordinal):
+                         && IsSameVersionTag(vm.AvailableTagName, resolvedOptions.IgnoredTagName):
                     return new UpdateDialogResult(UpdateOutcome.Ignored);
 
                 case UpdateState.Failed:
@@ -199,7 +199,7 @@ public partial class UpdateDialogWindow : Window
             case WindowResizeMode.Resizable:
                 SizeToContent = SizeToContent.Manual;
                 CanResize = true;
-                var init = options.InitialSize ?? new Size(500, 200);
+                var init = options.InitialSize ?? UpdateDialogDefaults.InitialSize;
                 Width = init.Width;
                 Height = init.Height;
                 MinWidth = options.MinSize.Width;
@@ -223,6 +223,20 @@ public partial class UpdateDialogWindow : Window
     {
         Close();
         e.Handled = true;
+    }
+
+    // バージョンタグ比較。先頭 v/V プレフィックスと前後空白を正規化して
+    // ホストが "v1.0.5" / "V1.0.5" / "1.0.5" のどれで永続化しても一致するようにする。
+    private static bool IsSameVersionTag(string? available, string? ignored)
+    {
+        if (string.IsNullOrEmpty(available) || string.IsNullOrEmpty(ignored))
+            return false;
+
+        var a = available.AsSpan().Trim();
+        var b = ignored.AsSpan().Trim();
+        if (a.Length > 0 && (a[0] == 'v' || a[0] == 'V')) a = a[1..];
+        if (b.Length > 0 && (b[0] == 'v' || b[0] == 'V')) b = b[1..];
+        return a.SequenceEqual(b);
     }
 
     private readonly UpdateDialogViewModel _viewModel;

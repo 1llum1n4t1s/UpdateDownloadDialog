@@ -41,7 +41,7 @@ public sealed class UpdateDialogOptions
     public Size? InitialSize { get; set; }
 
     /// <summary>リサイズ可能時の最小サイズ。</summary>
-    public Size MinSize { get; set; } = new(300, 120);
+    public Size MinSize { get; set; } = UpdateDialogDefaults.MinSize;
 
     /// <summary>リサイズ可能時の最大サイズ。null = 無制限。</summary>
     public Size? MaxSize { get; set; }
