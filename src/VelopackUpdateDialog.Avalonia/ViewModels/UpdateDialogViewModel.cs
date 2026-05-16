@@ -177,12 +177,8 @@ public sealed partial class UpdateDialogViewModel : ObservableObject
         }
         catch (Exception ex)
         {
+            // SetFailed が ErrorOccurred を発火するため、ここでは追加 raise しない
             SetFailed(ex);
-            if (!manualCheck)
-            {
-                // 自動チェックでは失敗を握り潰し、UI には残さない選択肢もある
-                Options.RaiseErrorOccurred(ex);
-            }
         }
     }
 
