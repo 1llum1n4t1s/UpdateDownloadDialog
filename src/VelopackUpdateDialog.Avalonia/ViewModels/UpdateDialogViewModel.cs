@@ -94,9 +94,6 @@ public sealed partial class UpdateDialogViewModel : ObservableObject
     /// <summary>State == Failed</summary>
     public bool IsFailed => State == UpdateState.Failed;
 
-    /// <summary>Available または Failed (≒ ボタン領域を出す状態)</summary>
-    public bool ShowActionButtons => IsAvailable || IsUpToDate || IsFailed;
-
     partial void OnStateChanged(UpdateState value)
     {
         OnPropertyChanged(nameof(IsChecking));
@@ -104,7 +101,6 @@ public sealed partial class UpdateDialogViewModel : ObservableObject
         OnPropertyChanged(nameof(IsUpToDate));
         OnPropertyChanged(nameof(IsDownloading));
         OnPropertyChanged(nameof(IsFailed));
-        OnPropertyChanged(nameof(ShowActionButtons));
     }
 
     // ---------------- 状態遷移 ----------------
@@ -173,6 +169,8 @@ public sealed partial class UpdateDialogViewModel : ObservableObject
         catch (OperationCanceledException)
         {
             FinalOutcome = UpdateOutcome.Cancelled;
+            // State を Idle に戻さないと次回 CheckAsync が L147-148 の "Checking" ガードで永久 return される
+            State = UpdateState.Idle;
             throw;
         }
         catch (Exception ex)

@@ -12,6 +12,8 @@ dotnet add package VelopackUpdateDialog.Avalonia
 
 依存: `Avalonia 12.0.3+`, `CommunityToolkit.Mvvm 8.4.2+`, `Velopack 0.0.1298+`, TFM `net10.0`。
 
+> 📦 **PackageId と namespace について**: NuGet パッケージ名は `VelopackUpdateDialog.Avalonia` ですが、C# namespace は `VelopackUpdateDialog`（`.Avalonia` 接尾辞なし）です。将来の WPF/WinForms 派生パッケージとの namespace 共有を見越した設計です。
+
 ## 最短の使い方
 
 ```csharp
@@ -26,6 +28,10 @@ await UpdateDialogWindow.ShowAsync(parentWindow, mgr);
 ## オプション指定
 
 ```csharp
+// 例: MyJapaneseStrings は IUpdateDialogStrings を実装するユーザー定義クラス。
+//     最小実装は samples/DemoApp/MainWindow.axaml.cs の JapaneseStrings を参照。
+// 例: MyIcons は IUpdateDialogIcons を実装するユーザー定義クラス。
+
 var options = new UpdateDialogOptions
 {
     // 表示文字列を差し替え（日本語 etc.）
@@ -47,6 +53,9 @@ var options = new UpdateDialogOptions
     AllowIgnoreVersion = true,
     AllowCloseDuringDownload = true,
     SuppressUpToDateOnAutoCheck = true,
+
+    // 自動チェック時はこのタグの更新を無視 (ホスト側で保存した IgnoreUpdateTag を渡す)
+    IgnoredTagName = Preferences.IgnoreUpdateTag,
 };
 
 // 「このバージョンを無視」を押された時の永続化処理
@@ -123,9 +132,20 @@ await vm.CheckAsync(manualCheck: true);
 | `Available` | バージョン バッジ + 「ダウンロードしてインストール」/「このバージョンを無視」 |
 | `Downloading` | 進捗バー (0-100) |
 | `UpToDate` | 「最新版です」+ Close |
-| `Failed` | エラーメッセージ + Close |
+| `Failed` | エラーメッセージ + Close（`ErrorOccurred` イベントで `Exception` がホストへ 1 回通知される） |
 
 ダウンロード完了後、Velopack の `ApplyUpdatesAndRestart` を自動呼び出し。
+
+### `manualCheck` の挙動差
+
+| | 手動チェック (`manualCheck: true`) | 自動チェック (`manualCheck: false`) |
+|---|---|---|
+| Window 表示 | 即表示（`Checking` 状態でスピナー） | チェック完了まで表示しない |
+| UpToDate | 「最新版です」を表示 | `SuppressUpToDateOnAutoCheck` (既定 true) なら何も表示せず `UpdateOutcome.UpToDate` を返す |
+| Available | バッジ + ボタン表示 | `IgnoredTagName` と一致すれば表示せず `UpdateOutcome.Ignored` を返す。それ以外は表示 |
+| Failed | エラー詳細を表示 | 表示せず `UpdateOutcome.Failed` を返す（`ErrorOccurred` 経由でホスト通知） |
+
+これにより自動チェックは「無関係な時は一切ポップアップを出さない」挙動になり、起動時のサイレントチェックに適する。
 
 ## License
 

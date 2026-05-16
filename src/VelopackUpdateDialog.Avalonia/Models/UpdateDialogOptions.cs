@@ -34,7 +34,7 @@ public sealed class UpdateDialogOptions
     /// <summary>ウィンドウのフレーム描画モード。既定 = <see cref="WindowChromeMode.Custom"/>。</summary>
     public WindowChromeMode ChromeMode { get; set; } = WindowChromeMode.Custom;
 
-    /// <summary>リサイズ挙動。既定 = <see cref="WindowResizeMode.Fixed"/> (大昔の SelfUpdate に回帰)。</summary>
+    /// <summary>リサイズ挙動。既定 = <see cref="WindowResizeMode.Fixed"/>。</summary>
     public WindowResizeMode ResizeMode { get; set; } = WindowResizeMode.Fixed;
 
     /// <summary>明示的な初期サイズ。null = ResizeMode に応じて自動 (Fixed なら SizeToContent、Resizable なら 500x200)。</summary>
@@ -57,12 +57,18 @@ public sealed class UpdateDialogOptions
     public bool AllowIgnoreVersion { get; set; } = true;
 
     /// <summary>ダウンロード中にウィンドウを閉じることを許可するか。
-    /// false にすると Close ボタン / Esc を抑止する。既定 = true (Komorebi 既存仕様: 閉じる = キャンセル)。</summary>
+    /// false にすると Close ボタン / Esc を抑止する。既定 = true (閉じる = キャンセル扱い)。</summary>
     public bool AllowCloseDuringDownload { get; set; } = true;
 
     /// <summary>最新版だった場合、自動チェック時は表示しない (true)。
     /// 手動チェック時に必ず結果を表示するなら呼び出し側で <c>manual: true</c> 指定。既定 = true。</summary>
     public bool SuppressUpToDateOnAutoCheck { get; set; } = true;
+
+    /// <summary>「このバージョンを無視」でホスト側が永続化したタグ名を渡しておくと、
+    /// 自動チェック時にそのタグの更新が見つかってもダイアログを一切表示しない。
+    /// 手動チェック時は無視されず通常通り表示される（ユーザー主導の操作を妨げないため）。
+    /// null / 空文字なら判定しない。例: <c>"v1.0.5"</c>。</summary>
+    public string? IgnoredTagName { get; set; }
 
     // ---------------- コールバック / イベント ----------------
 

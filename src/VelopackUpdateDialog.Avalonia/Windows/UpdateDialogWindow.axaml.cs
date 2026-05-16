@@ -34,7 +34,7 @@ public partial class UpdateDialogWindow : Window
     }
 
     /// <summary>
-    /// パーラレスコンストラクタ (Avalonia のデザイナ用)。実行時は呼ばない。
+    /// パラメタレスコンストラクタ (Avalonia のデザイナ用)。実行時は呼ばない。
     /// </summary>
     public UpdateDialogWindow() : this(CreateDesignViewModel())
     {
@@ -50,6 +50,18 @@ public partial class UpdateDialogWindow : Window
     /// <summary>
     /// 1 行呼び出しの便利メソッド。チェック → 結果に応じて自動で UI を出し、
     /// 最終 outcome を <see cref="UpdateDialogResult"/> として返す。
+    /// <para>
+    /// 手動チェック (<paramref name="manualCheck"/> = true) 時はチェック進捗を見せたいので
+    /// 即ウィンドウを表示し、バックグラウンドでチェック → 結果に応じて Available/UpToDate/Failed 状態へ遷移。
+    /// 自動チェック時はチェック完了まで何も表示せず、以下の場合のみウィンドウを開く:
+    /// </para>
+    /// <list type="bullet">
+    ///   <item>更新が利用可能 (<see cref="UpdateState.Available"/>) かつ
+    ///         <see cref="UpdateDialogOptions.IgnoredTagName"/> と一致しない</item>
+    /// </list>
+    /// <para>
+    /// 自動チェックで最新版 / 無視タグ / 失敗だった場合はウィンドウを開かず、戻り値で結果を通知する。
+    /// </para>
     /// </summary>
     /// <param name="owner">親ウィンドウ。null の場合は <see cref="Window.Show(Window)"/> ではなく <see cref="Window.Show()"/> で表示。</param>
     /// <param name="manager">既存の <see cref="UpdateManager"/>。</param>
@@ -63,23 +75,56 @@ public partial class UpdateDialogWindow : Window
         bool manualCheck = false,
         CancellationToken cancellationToken = default)
     {
-        var vm = new UpdateDialogViewModel(manager, options);
+        var resolvedOptions = options ?? UpdateDialogOptions.Default;
+        var vm = new UpdateDialogViewModel(manager, resolvedOptions);
+
+        // 自動チェック時はウィンドウを開かず先にチェック。
+        // 「最新」「無視タグ一致」「失敗」のどれかなら何も表示せず戻る。
+        if (!manualCheck)
+        {
+            try
+            {
+                await vm.CheckAsync(manualCheck: false, cancellationToken).ConfigureAwait(true);
+            }
+            catch (OperationCanceledException)
+            {
+                return new UpdateDialogResult(UpdateOutcome.Cancelled);
+            }
+
+            switch (vm.State)
+            {
+                case UpdateState.UpToDate when resolvedOptions.SuppressUpToDateOnAutoCheck:
+                    return new UpdateDialogResult(UpdateOutcome.UpToDate);
+
+                case UpdateState.Available
+                    when !string.IsNullOrEmpty(resolvedOptions.IgnoredTagName)
+                         && string.Equals(vm.AvailableTagName, resolvedOptions.IgnoredTagName, StringComparison.Ordinal):
+                    return new UpdateDialogResult(UpdateOutcome.Ignored);
+
+                case UpdateState.Failed:
+                    // 自動チェックの失敗は ErrorOccurred 経由でホストに通知済み。ダイアログは出さない。
+                    return new UpdateDialogResult(UpdateOutcome.Failed, vm.FinalError);
+            }
+        }
+
         var window = new UpdateDialogWindow(vm);
 
-        // チェックは UI が見えている間に非同期で進める
-        _ = vm.CheckAsync(manualCheck, cancellationToken).ContinueWith(t =>
+        // 手動チェック時のみ、ウィンドウ表示と並行してチェックを開始する
+        if (manualCheck)
         {
-            if (t.IsFaulted && t.Exception?.InnerException is { } ex)
-                Avalonia.Threading.Dispatcher.UIThread.Post(() => vm.SetFailed(ex));
-
-            // 自動チェック + 最新版 + suppress が立ってる場合は無音で閉じる
-            if (!manualCheck
-                && vm.State == UpdateState.UpToDate
-                && vm.Options.SuppressUpToDateOnAutoCheck)
+            _ = vm.CheckAsync(manualCheck: true, cancellationToken).ContinueWith(t =>
             {
-                Avalonia.Threading.Dispatcher.UIThread.Post(window.Close);
-            }
-        }, TaskScheduler.Default);
+                if (t.IsFaulted && t.Exception?.InnerException is { } ex)
+                {
+                    Avalonia.Threading.Dispatcher.UIThread.Post(() => vm.SetFailed(ex));
+                }
+                else if (t.IsCanceled)
+                {
+                    // cancellationToken 発火時に Window が「チェック中」表示で固まらないよう Idle に戻す
+                    Avalonia.Threading.Dispatcher.UIThread.Post(() => vm.SetUpToDate());
+                }
+            }, TaskScheduler.Default);
+        }
 
         if (owner is not null)
             await window.ShowDialog(owner).ConfigureAwait(true);

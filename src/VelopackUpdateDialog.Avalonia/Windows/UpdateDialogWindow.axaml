@@ -3,7 +3,6 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="using:VelopackUpdateDialog"
-        xmlns:v="using:VelopackUpdateDialog"
         mc:Ignorable="d" d:DesignWidth="500" d:DesignHeight="220"
         x:Class="VelopackUpdateDialog.UpdateDialogWindow"
         x:DataType="vm:UpdateDialogViewModel"
@@ -64,7 +63,7 @@
     </Grid>
 
     <!-- 本体 -->
-    <v:UpdateDialogView Grid.Row="1"
+    <vm:UpdateDialogView Grid.Row="1"
                        x:Name="DialogBody"
                        DataContext="{Binding}"/>
 
