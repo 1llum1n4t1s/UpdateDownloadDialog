@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Avalonia.Media;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
+using SuperLightLogger;
 using Velopack;
 using Velopack.Sources;
 
@@ -15,6 +16,8 @@ namespace VelopackUpdateDialog;
 /// </summary>
 public sealed partial class UpdateDialogViewModel : ObservableObject
 {
+    private static readonly ILog log = LogManager.GetLogger(typeof(UpdateDialogViewModel));
+
     /// <summary>
     /// 既存の <see cref="UpdateManager"/> を持ち込んで初期化する。
     /// Velopack の初期化はホスト側で行う前提（GithubSource の URL 等が外部依存になりがちなため）。
@@ -28,14 +31,35 @@ public sealed partial class UpdateDialogViewModel : ObservableObject
 
     /// <summary>
     /// GitHub リポジトリ URL から <see cref="GithubSource"/> + <see cref="UpdateManager"/> を内部で組み立てる便利コンストラクタ。
+    /// <para>
+    /// セキュリティのため URL は <c>https://github.com/...</c> に限定する。GitHub Enterprise や
+    /// ユーザー入力経由で動的に URL を組む場合は、こちらではなく
+    /// <see cref="UpdateDialogViewModel(UpdateManager, UpdateDialogOptions?)"/> を使ってホスト側で
+    /// <see cref="UpdateManager"/> を構築すること。
+    /// </para>
     /// </summary>
     /// <param name="githubRepoUrl">例: <c>https://github.com/owner/repo</c></param>
     /// <param name="accessToken">プライベートリポジトリ用トークン (省略可)。</param>
     /// <param name="prerelease">プレリリースも検索対象にするか。</param>
     /// <param name="options">表示・振る舞いオプション。</param>
+    /// <exception cref="ArgumentException"><paramref name="githubRepoUrl"/> が absolute URI でない、または https / github.com 以外。</exception>
     public UpdateDialogViewModel(string githubRepoUrl, string? accessToken = null, bool prerelease = false, UpdateDialogOptions? options = null)
-        : this(new UpdateManager(new GithubSource(githubRepoUrl, accessToken ?? string.Empty, prerelease)), options)
+        : this(BuildGithubManager(githubRepoUrl, accessToken, prerelease), options)
     {
+    }
+
+    private static UpdateManager BuildGithubManager(string githubRepoUrl, string? accessToken, bool prerelease)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(githubRepoUrl);
+        if (!Uri.TryCreate(githubRepoUrl, UriKind.Absolute, out var uri))
+            throw new ArgumentException("githubRepoUrl must be an absolute URI.", nameof(githubRepoUrl));
+        if (uri.Scheme != Uri.UriSchemeHttps)
+            throw new ArgumentException("githubRepoUrl must use https scheme.", nameof(githubRepoUrl));
+        if (!uri.Host.Equals("github.com", StringComparison.OrdinalIgnoreCase))
+            throw new ArgumentException(
+                "githubRepoUrl host must be github.com. For GitHub Enterprise, use the UpdateManager-injection constructor.",
+                nameof(githubRepoUrl));
+        return new UpdateManager(new GithubSource(githubRepoUrl, accessToken ?? string.Empty, prerelease));
     }
 
     // ---------------- 公開プロパティ ----------------
@@ -96,6 +120,7 @@ public sealed partial class UpdateDialogViewModel : ObservableObject
 
     partial void OnStateChanged(UpdateState value)
     {
+        log.InfoFormat("State changed to {0}", value);
         OnPropertyChanged(nameof(IsChecking));
         OnPropertyChanged(nameof(IsAvailable));
         OnPropertyChanged(nameof(IsUpToDate));
@@ -130,6 +155,7 @@ public sealed partial class UpdateDialogViewModel : ObservableObject
         FinalError = ex;
         ErrorMessage = ex.InnerException?.Message ?? ex.Message;
         State = UpdateState.Failed;
+        log.Error("Update flow failed", ex);
         Options.RaiseErrorOccurred(ex);
     }
 

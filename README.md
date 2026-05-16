@@ -147,6 +147,45 @@ await vm.CheckAsync(manualCheck: true);
 
 これにより自動チェックは「無関係な時は一切ポップアップを出さない」挙動になり、起動時のサイレントチェックに適する。
 
+## 事前条件
+
+- ホストアプリは **Velopack でパッケージ化** (`vpk pack`) されている必要がある。`UpdateManager.IsInstalled` が `false` の場合 (= `vpk pack` を経ていない開発実行など)、本ライブラリは常に `UpdateOutcome.UpToDate` を返す
+- ホストアプリの `Program.Main` 冒頭で `VelopackApp.Build().Run()` を呼ぶこと (Velopack 公式の事前要件)
+- TFM `net10.0` 以上
+
+## ロギング
+
+本ライブラリは [SuperLightLogger](https://www.nuget.org/packages/SuperLightLogger/) を内部で使用しており、状態遷移と失敗時のスタックトレースを log4net 互換 API で出力する。ホストアプリで以下を設定すると拾える:
+
+```csharp
+SuperLightLogger.LogManager.Configure(builder =>
+{
+    builder.AddConsole();
+    builder.SetMinimumLevel("Information");
+});
+```
+
+設定しなくても `Options.ErrorOccurred` イベントで失敗時の `Exception` が 1 回通知されるが、運用環境ではロガー設定を推奨する。
+
+## Troubleshooting
+
+| 症状 | 確認ポイント |
+|---|---|
+| `ShowAsync` を呼んでも何も起きない | `manualCheck: true` で呼んでいるか / `SuppressUpToDateOnAutoCheck` が既定 (true) でないか / `IgnoredTagName` が現バージョンと一致していないか |
+| 「最新版です」と出るが新版あるはず | ホストアプリが `vpk pack` 経由でインストール済みか (`UpdateManager.IsInstalled == true`) / `GithubSource` の URL / `prerelease` フラグ |
+| ダウンロードが 0% から進まない | `Options.ErrorOccurred` を購読してログ取得 / プロキシ・TLS 1.2+ / `accessToken` の有効性 |
+| 「このバージョンを無視」しても翌起動で再表示 | ホスト側で保存している `IgnoredTagName` を `Options.IgnoredTagName` に渡しているか (`v` プレフィックスと前後空白は正規化される) |
+| `ArgumentException: githubRepoUrl host must be github.com` | 便利コンストラクタは `https://github.com/...` のみ受け付ける。GitHub Enterprise や独自ホストは `UpdateDialogViewModel(UpdateManager, ...)` を使う |
+
+## Security Considerations
+
+- **コード署名**: Velopack の `vpk pack --signParams` (Windows: SignTool) / `--signEntitlements` (macOS: codesign) で配布パッケージに必ず署名を施すこと。未署名運用は、GitHub Release への push 権限を握った攻撃者が任意コード実行を仕込める経路になる
+- **GitHub Repository 設定**: Release への push 権限は branch protection + required reviews で絞ること
+- **アクセストークン**: 平文設定ファイルへの保存は避け、Windows Credential Manager / macOS Keychain / DPAPI などで保護する。`accessToken` は `GithubSource` 経由で `Authorization` ヘッダに送信される
+- **エラーログ**: `Options.ErrorOccurred` で受け取った `Exception` を外部テレメトリ (Sentry / Application Insights 等) に送る場合、本ライブラリは生のメッセージを sanitize しない。ホスト側でロガー設定時に PII / token を redact すること
+
+詳細は [Velopack 公式ドキュメント](https://docs.velopack.io/packaging/signing) も参照。
+
 ## License
 
 MIT
