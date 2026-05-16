@@ -1,0 +1,140 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:VelopackUpdateDialog"
+             mc:Ignorable="d" d:DesignWidth="500" d:DesignHeight="200"
+             x:Class="VelopackUpdateDialog.UpdateDialogView"
+             x:DataType="vm:UpdateDialogViewModel">
+
+  <UserControl.Resources>
+    <ResourceDictionary>
+      <ResourceDictionary.MergedDictionaries>
+        <ResourceInclude Source="avares://VelopackUpdateDialog/Themes/Themes.axaml"/>
+      </ResourceDictionary.MergedDictionaries>
+    </ResourceDictionary>
+  </UserControl.Resources>
+
+  <UserControl.Styles>
+    <StyleInclude Source="avares://VelopackUpdateDialog/Themes/Styles.axaml"/>
+  </UserControl.Styles>
+
+  <Grid Margin="16,8">
+
+    <!-- 確認中 -->
+    <StackPanel Orientation="Vertical"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                IsVisible="{Binding IsChecking}">
+      <ProgressBar IsIndeterminate="True" Width="240" Height="6"/>
+      <TextBlock Margin="0,12,0,0"
+                 HorizontalAlignment="Center"
+                 Text="{Binding Strings.CheckingMessage}"/>
+    </StackPanel>
+
+    <!-- 新バージョン利用可能 -->
+    <StackPanel Orientation="Vertical" IsVisible="{Binding IsAvailable}">
+      <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,8">
+        <Path Width="14" Height="14"
+              Data="{Binding Icons.Info}"
+              Fill="{DynamicResource UpdateDialog.SuccessBrush}"/>
+        <TextBlock Margin="8,0,0,0" FontWeight="Bold" FontSize="14"
+                   Text="{Binding Strings.AvailableHeader}"/>
+        <Border Margin="4,0,0,0" Height="20" CornerRadius="10"
+                Background="{Binding AccentBrush, FallbackValue={DynamicResource UpdateDialog.AccentBrush}, TargetNullValue={DynamicResource UpdateDialog.AccentBrush}}"
+                Effect="drop-shadow(0 0 6 #40000000)">
+          <TextBlock Margin="8,0" Text="{Binding AvailableTagName}" FontSize="12" Foreground="White"/>
+        </Border>
+      </StackPanel>
+
+      <StackPanel Margin="0,8,0,0" Orientation="Horizontal" HorizontalAlignment="Center">
+        <Button x:Name="BtnDownload"
+                Classes="primary"
+                Height="30"
+                HorizontalContentAlignment="Center"
+                VerticalContentAlignment="Center"
+                Click="OnDownloadAndInstall">
+          <StackPanel Orientation="Horizontal">
+            <Path Width="12" Height="12" Data="{Binding Icons.Download}" Fill="White"/>
+            <TextBlock Text="{Binding Strings.DownloadAndInstall}" Margin="8,0,0,0" Foreground="White"/>
+          </StackPanel>
+        </Button>
+
+        <Button x:Name="BtnIgnore"
+                Height="30"
+                Margin="8,0,0,0"
+                HorizontalContentAlignment="Center"
+                VerticalContentAlignment="Center"
+                IsVisible="{Binding AllowIgnoreVersion}"
+                Click="OnIgnoreVersion">
+          <StackPanel Orientation="Horizontal">
+            <Path Width="12" Height="12" Data="{Binding Icons.Ignore}"/>
+            <TextBlock Text="{Binding Strings.IgnoreThisVersion}" Margin="8,0,0,0"/>
+          </StackPanel>
+        </Button>
+      </StackPanel>
+    </StackPanel>
+
+    <!-- ダウンロード中 -->
+    <StackPanel Orientation="Vertical" IsVisible="{Binding IsDownloading}">
+      <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,8">
+        <Path Width="14" Height="14"
+              Data="{Binding Icons.Info}"
+              Fill="{DynamicResource UpdateDialog.SuccessBrush}"/>
+        <TextBlock Margin="8,0,0,0" FontWeight="Bold" FontSize="14"
+                   Text="{Binding Strings.AvailableHeader}"/>
+        <Border Margin="4,0,0,0" Height="20" CornerRadius="10"
+                Background="{Binding AccentBrush, FallbackValue={DynamicResource UpdateDialog.AccentBrush}, TargetNullValue={DynamicResource UpdateDialog.AccentBrush}}"
+                Effect="drop-shadow(0 0 6 #40000000)">
+          <TextBlock Margin="8,0" Text="{Binding AvailableTagName}" FontSize="12" Foreground="White"/>
+        </Border>
+      </StackPanel>
+
+      <ProgressBar Minimum="0" Maximum="100"
+                   Value="{Binding DownloadProgress}"
+                   Height="8" Margin="0,8,0,0" Width="500"/>
+    </StackPanel>
+
+    <!-- 最新版 -->
+    <StackPanel Orientation="Vertical" IsVisible="{Binding IsUpToDate}">
+      <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,8">
+        <Path Width="14" Height="14"
+              Data="{Binding Icons.Info}"
+              Fill="{DynamicResource UpdateDialog.SuccessBrush}"/>
+        <TextBlock Margin="8,0,0,0" Text="{Binding Strings.UpToDateMessage}"/>
+      </StackPanel>
+
+      <Button Classes="primary"
+              Height="30"
+              Margin="4,0"
+              Click="OnClose"
+              Content="{Binding Strings.Close}"
+              HorizontalAlignment="Center"
+              HorizontalContentAlignment="Center"
+              VerticalContentAlignment="Center"/>
+    </StackPanel>
+
+    <!-- 失敗 -->
+    <StackPanel Orientation="Vertical" IsVisible="{Binding IsFailed}">
+      <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+        <Path Width="14" Height="14"
+              Data="{Binding Icons.Error}"
+              Fill="{DynamicResource UpdateDialog.ErrorBrush}"/>
+        <TextBlock Margin="8,0,0,0" FontWeight="Bold" FontSize="14"
+                   Text="{Binding Strings.ErrorHeader}"/>
+      </StackPanel>
+
+      <TextBlock Text="{Binding ErrorMessage}" MaxWidth="500" TextWrapping="Wrap" Margin="0,8"/>
+
+      <Button Classes="primary"
+              Height="30"
+              Margin="4,0"
+              Click="OnClose"
+              Content="{Binding Strings.Close}"
+              HorizontalAlignment="Center"
+              HorizontalContentAlignment="Center"
+              VerticalContentAlignment="Center"/>
+    </StackPanel>
+
+  </Grid>
+</UserControl>

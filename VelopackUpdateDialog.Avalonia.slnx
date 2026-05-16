@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="src/VelopackUpdateDialog.Avalonia/VelopackUpdateDialog.Avalonia.csproj" />
+  <Project Path="samples/DemoApp/DemoApp.csproj" />
+</Solution>

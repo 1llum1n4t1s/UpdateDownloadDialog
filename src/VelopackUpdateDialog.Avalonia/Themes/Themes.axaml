@@ -1,0 +1,45 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <ResourceDictionary.ThemeDictionaries>
+
+    <!-- Light -->
+    <ResourceDictionary x:Key="Light">
+      <Color x:Key="UpdateDialog.WindowBackgroundColor">#FFFFFFFF</Color>
+      <Color x:Key="UpdateDialog.TitleBarColor">#FFF5F5F5</Color>
+      <Color x:Key="UpdateDialog.BorderColor">#FFDDDDDD</Color>
+      <Color x:Key="UpdateDialog.ForegroundColor">#FF202020</Color>
+      <Color x:Key="UpdateDialog.AccentColor">#FF0066FF</Color>
+      <Color x:Key="UpdateDialog.SuccessColor">#FF1FA851</Color>
+      <Color x:Key="UpdateDialog.ErrorColor">#FFDA3D3D</Color>
+
+      <SolidColorBrush x:Key="UpdateDialog.WindowBackground" Color="{StaticResource UpdateDialog.WindowBackgroundColor}"/>
+      <SolidColorBrush x:Key="UpdateDialog.TitleBarBrush" Color="{StaticResource UpdateDialog.TitleBarColor}"/>
+      <SolidColorBrush x:Key="UpdateDialog.BorderBrush" Color="{StaticResource UpdateDialog.BorderColor}"/>
+      <SolidColorBrush x:Key="UpdateDialog.ForegroundBrush" Color="{StaticResource UpdateDialog.ForegroundColor}"/>
+      <SolidColorBrush x:Key="UpdateDialog.AccentBrush" Color="{StaticResource UpdateDialog.AccentColor}"/>
+      <SolidColorBrush x:Key="UpdateDialog.SuccessBrush" Color="{StaticResource UpdateDialog.SuccessColor}"/>
+      <SolidColorBrush x:Key="UpdateDialog.ErrorBrush" Color="{StaticResource UpdateDialog.ErrorColor}"/>
+    </ResourceDictionary>
+
+    <!-- Dark -->
+    <ResourceDictionary x:Key="Dark">
+      <Color x:Key="UpdateDialog.WindowBackgroundColor">#FF1E1E1E</Color>
+      <Color x:Key="UpdateDialog.TitleBarColor">#FF252526</Color>
+      <Color x:Key="UpdateDialog.BorderColor">#FF3F3F3F</Color>
+      <Color x:Key="UpdateDialog.ForegroundColor">#FFE0E0E0</Color>
+      <Color x:Key="UpdateDialog.AccentColor">#FF4A9EFF</Color>
+      <Color x:Key="UpdateDialog.SuccessColor">#FF4FCB7A</Color>
+      <Color x:Key="UpdateDialog.ErrorColor">#FFFF6B6B</Color>
+
+      <SolidColorBrush x:Key="UpdateDialog.WindowBackground" Color="{StaticResource UpdateDialog.WindowBackgroundColor}"/>
+      <SolidColorBrush x:Key="UpdateDialog.TitleBarBrush" Color="{StaticResource UpdateDialog.TitleBarColor}"/>
+      <SolidColorBrush x:Key="UpdateDialog.BorderBrush" Color="{StaticResource UpdateDialog.BorderColor}"/>
+      <SolidColorBrush x:Key="UpdateDialog.ForegroundBrush" Color="{StaticResource UpdateDialog.ForegroundColor}"/>
+      <SolidColorBrush x:Key="UpdateDialog.AccentBrush" Color="{StaticResource UpdateDialog.AccentColor}"/>
+      <SolidColorBrush x:Key="UpdateDialog.SuccessBrush" Color="{StaticResource UpdateDialog.SuccessColor}"/>
+      <SolidColorBrush x:Key="UpdateDialog.ErrorBrush" Color="{StaticResource UpdateDialog.ErrorColor}"/>
+    </ResourceDictionary>
+
+  </ResourceDictionary.ThemeDictionaries>
+</ResourceDictionary>

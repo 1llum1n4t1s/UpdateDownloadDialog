@@ -1,0 +1,24 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <!-- primary ボタン: アクセント色背景 + 白文字 -->
+  <Style Selector="Button.primary">
+    <Setter Property="Background" Value="{DynamicResource UpdateDialog.AccentBrush}"/>
+    <Setter Property="Foreground" Value="White"/>
+    <Setter Property="BorderThickness" Value="0"/>
+    <Setter Property="Padding" Value="12,4"/>
+    <Setter Property="CornerRadius" Value="4"/>
+    <Setter Property="MinWidth" Value="80"/>
+  </Style>
+
+  <Style Selector="Button.primary:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource UpdateDialog.AccentBrush}"/>
+    <Setter Property="Opacity" Value="0.85"/>
+  </Style>
+
+  <Style Selector="Button.primary:pressed /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource UpdateDialog.AccentBrush}"/>
+    <Setter Property="Opacity" Value="0.7"/>
+  </Style>
+
+</Styles>

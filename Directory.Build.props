@@ -1,0 +1,36 @@
+<Project>
+  <PropertyGroup>
+    <Version>1.0.0</Version>
+    <Authors>ゆろち</Authors>
+    <Copyright>Copyright (c) 2026 ゆろち</Copyright>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/1llum1n4t1s/UpdateDownloadDialog</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/1llum1n4t1s/UpdateDownloadDialog</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageOutputPath>$(MSBuildThisFileDirectory)artifacts</PackageOutputPath>
+    <PackageTags>avalonia;velopack;updater;dialog;mvvm;auto-update</PackageTags>
+
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+
+    <!-- icon ファイルが存在する場合のみ参照 (placeholder 運用) -->
+    <PackageIcon Condition="Exists('$(MSBuildThisFileDirectory)icon/app_icon.png')">icon.png</PackageIcon>
+    <ApplicationIcon Condition="Exists('$(MSBuildThisFileDirectory)icon/app.ico')">$(MSBuildThisFileDirectory)icon\app.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <!-- IsPackable=true のプロジェクトにのみ README / アイコンを同梱 -->
+  <ItemGroup Condition="'$(IsPackable)' == 'true'">
+    <None Include="$(MSBuildThisFileDirectory)README.md" Pack="true" PackagePath="\" Visible="false" />
+    <None Include="$(MSBuildThisFileDirectory)LICENSE" Pack="true" PackagePath="\" Visible="false" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(IsPackable)' == 'true' AND Exists('$(MSBuildThisFileDirectory)icon/app_icon.png')">
+    <None Include="$(MSBuildThisFileDirectory)icon/app_icon.png" Pack="true" PackagePath="icon.png" Visible="false" />
+  </ItemGroup>
+</Project>

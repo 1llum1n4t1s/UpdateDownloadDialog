@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <RootNamespace>VelopackUpdateDialog</RootNamespace>
+    <AssemblyName>VelopackUpdateDialog</AssemblyName>
+
+    <!-- NuGet パッケージ メタデータ (Directory.Build.props で集約済みの項目はここに書かない) -->
+    <IsPackable>true</IsPackable>
+    <PackageId>VelopackUpdateDialog.Avalonia</PackageId>
+    <Title>Velopack Update Dialog for Avalonia</Title>
+    <Description>Avalonia 12 で動く Velopack 自動更新ダイアログ。Window / UserControl / ViewModel の 3 段提供で柔軟にホストできる。</Description>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="12.0.3" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="12.0.3" />
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    <PackageReference Include="Velopack" Version="0.0.1298" />
+  </ItemGroup>
+</Project>
