@@ -67,6 +67,15 @@ public partial class MainWindow : Window
         ShowWithState(UpdateState.Checking);
     }
 
+    private void OnShowDownloading(object? sender, RoutedEventArgs e)
+    {
+        ShowWithState(UpdateState.Downloading, vm =>
+        {
+            vm.AvailableTagName = "v1.2.3";
+            vm.DownloadProgress = 35;
+        });
+    }
+
     private void OnShowResizableSystem(object? sender, RoutedEventArgs e)
     {
         var options = new UpdateDialogOptions

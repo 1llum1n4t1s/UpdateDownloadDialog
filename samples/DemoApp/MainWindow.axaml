@@ -3,15 +3,29 @@
         xmlns:upd="using:VelopackUpdateDialog"
         x:Class="DemoApp.MainWindow"
         Width="640" Height="420"
-        Title="VelopackUpdateDialog.Avalonia Demo">
+        Title="VelopackUpdateDialog.Avalonia Demo"
+        Background="Transparent"
+        ExtendClientAreaTitleBarHeightHint="32"
+        ExtendClientAreaToDecorationsHint="True"
+        TransparencyLevelHint="AcrylicBlur,Blur,None">
 
-  <Grid RowDefinitions="Auto,*" Margin="16">
+  <Panel>
+    <ExperimentalAcrylicBorder IsHitTestVisible="False">
+      <ExperimentalAcrylicBorder.Material>
+        <ExperimentalAcrylicMaterial BackgroundSource="Digger"
+                                     MaterialOpacity="0.85"
+                                     TintColor="{DynamicResource Demo.AcrylicTint}"
+                                     TintOpacity="0.9"/>
+      </ExperimentalAcrylicBorder.Material>
+    </ExperimentalAcrylicBorder>
+
+    <Grid RowDefinitions="Auto,*" Margin="16,40,16,16">
 
     <StackPanel Grid.Row="0" Orientation="Vertical" Spacing="8">
       <TextBlock Text="VelopackUpdateDialog.Avalonia Demo" FontSize="20" FontWeight="Bold"/>
-      <TextBlock Text="各ボタンで 4 状態のダイアログを出して確認できます。" Foreground="#666"/>
+      <TextBlock Text="各ボタンで 5 状態のダイアログを出して確認できます。" Foreground="#666"/>
 
-      <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto,Auto" Margin="0,12,0,0">
+      <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto" Margin="0,12,0,0">
 
         <Button Grid.Row="0" Grid.Column="0"
                 Margin="0,0,8,8"
@@ -41,10 +55,17 @@
                 Grid.ColumnSpan="2"
                 Margin="0,0,0,8"
                 HorizontalAlignment="Stretch"
+                Content="Show: Downloading (ダウンロード中, 35%)"
+                Click="OnShowDownloading"/>
+
+        <Button Grid.Row="3" Grid.Column="0"
+                Grid.ColumnSpan="2"
+                Margin="0,0,0,8"
+                HorizontalAlignment="Stretch"
                 Content="Show: Resizable + System chrome (可変ウィンドウ)"
                 Click="OnShowResizableSystem"/>
 
-        <Button Grid.Row="3" Grid.Column="0"
+        <Button Grid.Row="4" Grid.Column="0"
                 Grid.ColumnSpan="2"
                 Margin="0,0,0,8"
                 HorizontalAlignment="Stretch"
@@ -62,5 +83,6 @@
         <upd:UpdateDialogView Grid.Row="1" x:Name="InlineView"/>
       </Grid>
     </Border>
-  </Grid>
+    </Grid>
+  </Panel>
 </Window>

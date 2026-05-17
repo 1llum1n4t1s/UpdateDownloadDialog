@@ -169,9 +169,14 @@ public partial class UpdateDialogWindow : Window
         switch (options.ChromeMode)
         {
             case WindowChromeMode.System:
+                // OS タイトルバーとアクリル背景は視覚的に両立しないので、
+                // System モード時はアクリルを Off にしてソリッド背景に戻す。
                 ExtendClientAreaToDecorationsHint = false;
                 WindowDecorations = WindowDecorations.Full;
                 CustomTitleBar.IsVisible = false;
+                TransparencyLevelHint = new[] { Avalonia.Controls.WindowTransparencyLevel.None };
+                AcrylicBackdrop.IsVisible = false;
+                SolidBackdrop.IsVisible = true;
                 break;
 
             case WindowChromeMode.Custom:
@@ -179,6 +184,7 @@ public partial class UpdateDialogWindow : Window
                 ExtendClientAreaTitleBarHeightHint = -1;
                 WindowDecorations = WindowDecorations.BorderOnly;
                 CustomTitleBar.IsVisible = true;
+                // XAML 側のアクリル背景をそのまま使う (TransparencyLevelHint は XAML で指定済み)
                 break;
         }
 
