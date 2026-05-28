@@ -11,7 +11,7 @@ public enum UpdateState
     /// <summary>GitHub Release を確認中。</summary>
     Checking,
 
-    /// <summary>新バージョンが利用可能。<c>VelopackUpdate</c> 情報を保持。</summary>
+    /// <summary>新バージョンが利用可能。<see cref="Velopack.UpdateInfo"/> 情報を保持。</summary>
     Available,
 
     /// <summary>現在のバージョンが最新。</summary>

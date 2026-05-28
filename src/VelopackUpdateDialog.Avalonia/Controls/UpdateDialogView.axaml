@@ -39,7 +39,7 @@
               Margin="0,0,8,0"
               Stretch="Uniform"
               VerticalAlignment="Center"
-              Data="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"
+              Data="{StaticResource UpdateDialog.InfoGeometry}"
               Fill="{DynamicResource UpdateDialog.SuccessBrush}"/>
         <TextBlock FontWeight="Bold" FontSize="14"
                    VerticalAlignment="Center"
@@ -93,7 +93,7 @@
               Margin="0,0,8,0"
               Stretch="Uniform"
               VerticalAlignment="Center"
-              Data="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"
+              Data="{StaticResource UpdateDialog.InfoGeometry}"
               Fill="{DynamicResource UpdateDialog.SuccessBrush}"/>
         <TextBlock FontWeight="Bold" FontSize="14"
                    VerticalAlignment="Center"
@@ -118,7 +118,7 @@
               Margin="0,0,8,0"
               Stretch="Uniform"
               VerticalAlignment="Center"
-              Data="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"
+              Data="{StaticResource UpdateDialog.InfoGeometry}"
               Fill="{DynamicResource UpdateDialog.SuccessBrush}"/>
         <TextBlock VerticalAlignment="Center"
                    Text="{Binding Strings.UpToDateMessage}"/>

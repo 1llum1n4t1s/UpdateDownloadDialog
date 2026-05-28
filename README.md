@@ -10,7 +10,7 @@ Avalonia 12 で動く **Velopack 自動更新ダイアログ** の再利用可�
 dotnet add package VelopackUpdateDialog.Avalonia
 ```
 
-依存: `Avalonia 12.0.3+`, `CommunityToolkit.Mvvm 8.4.2+`, `Velopack 0.0.1298+`, TFM `net10.0`。
+依存: `Avalonia 12.0.4+`, `CommunityToolkit.Mvvm 8.4.2+`, `Velopack 1.0.1+`, TFM `net10.0`。
 
 > 📦 **PackageId と namespace について**: NuGet パッケージ名は `VelopackUpdateDialog.Avalonia` ですが、C# namespace は `VelopackUpdateDialog`（`.Avalonia` 接尾辞なし）です。将来の WPF/WinForms 派生パッケージとの namespace 共有を見越した設計です。
 
@@ -150,17 +150,21 @@ await vm.CheckAsync(manualCheck: true);
 
 ## ロギング
 
-本ライブラリは [SuperLightLogger](https://www.nuget.org/packages/SuperLightLogger/) を内部で使用しており、状態遷移と失敗時のスタックトレースを log4net 互換 API で出力する。ホストアプリで以下を設定すると拾える:
+本ライブラリは [SuperLightLogger](https://www.nuget.org/packages/SuperLightLogger/) を内部で使用しており、状態遷移と失敗時のスタックトレースを `Microsoft.Extensions.Logging` 抽象で出力する。ホストアプリで以下を設定すると拾える（コンソール出力には `Microsoft.Extensions.Logging.Console` パッケージが必要）:
 
 ```csharp
+using Microsoft.Extensions.Logging;
+
 SuperLightLogger.LogManager.Configure(builder =>
 {
     builder.AddConsole();
-    builder.SetMinimumLevel("Information");
+    builder.SetMinimumLevel(LogLevel.Information);
 });
 ```
 
 設定しなくても `Options.ErrorOccurred` イベントで失敗時の `Exception` が 1 回通知されるが、運用環境ではロガー設定を推奨する。
+
+> ⚠️ **起動時の自動チェックを fire-and-forget (`_ = ShowAsync(...)`) で呼ぶ場合**、戻り値の `UpdateDialogResult` を見ないため、失敗を観測する手段が `Options.ErrorOccurred` の購読かロガー設定だけになる。プロキシ遮断・TLS 失敗などを静かに見逃さないよう、**自動チェック時は最低でも `ErrorOccurred` を購読する**ことを推奨する。
 
 ## Troubleshooting
 
