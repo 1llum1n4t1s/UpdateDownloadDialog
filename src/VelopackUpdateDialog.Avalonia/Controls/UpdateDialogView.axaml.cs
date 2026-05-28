@@ -30,6 +30,9 @@ public partial class UpdateDialogView : UserControl
             }
             catch (Exception ex)
             {
+                // DownloadAndApplyAsync は通常 VM 内部で例外を捕捉して SetFailed するため、
+                // ここに到達するのは Task 構築前の同期部分で例外が出た稀なケースのみ。
+                // async void ハンドラなので未捕捉例外はアプリをクラッシュさせる。最後の安全網として残す。
                 vm.SetFailed(ex);
             }
         }

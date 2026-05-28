@@ -120,8 +120,9 @@ public partial class UpdateDialogWindow : Window
                 }
                 else if (t.IsCanceled)
                 {
-                    // cancellationToken 発火時に Window が「チェック中」表示で固まらないよう Idle に戻す
-                    Avalonia.Threading.Dispatcher.UIThread.Post(() => vm.SetUpToDate());
+                    // cancellationToken 発火時はキャンセルなので「最新版です」と誤表示せず、ウィンドウを閉じる。
+                    // FinalOutcome は CheckAsync 内で既に Cancelled に確定済み (表示と戻り値が整合する)。
+                    Avalonia.Threading.Dispatcher.UIThread.Post(() => window.Close());
                 }
             }, TaskScheduler.Default);
         }
@@ -161,6 +162,15 @@ public partial class UpdateDialogWindow : Window
 
         _viewModel.OnClosing();
         base.OnClosing(e);
+    }
+
+    /// <inheritdoc />
+    protected override void OnClosed(EventArgs e)
+    {
+        // ウィンドウが閉じきった後に ViewModel の CancellationTokenSource を解放する。
+        // この時点で OnClosing 経由でダウンロードはキャンセル済み (AllowCloseDuringDownload=false なら閉じない)。
+        _viewModel.Dispose();
+        base.OnClosed(e);
     }
 
     private void ApplyOptions(UpdateDialogOptions options)
