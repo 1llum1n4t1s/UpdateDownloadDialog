@@ -70,9 +70,6 @@ public sealed partial class UpdateDialogViewModel : ObservableObject
     /// <summary>解決された文字列セット。XAML バインディング用。</summary>
     public IUpdateDialogStrings Strings => Options.ResolvedStrings;
 
-    /// <summary>解決されたアイコンセット。XAML バインディング用。</summary>
-    public IUpdateDialogIcons Icons => Options.ResolvedIcons;
-
     /// <summary>アクセントカラー。null の場合はテーマ既定。</summary>
     public IBrush? AccentBrush => Options.AccentBrush;
 

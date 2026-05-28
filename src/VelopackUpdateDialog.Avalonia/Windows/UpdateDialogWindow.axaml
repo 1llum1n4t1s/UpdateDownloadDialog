@@ -53,7 +53,7 @@
               Stretch="Uniform"
               HorizontalAlignment="Left"
               VerticalAlignment="Center"
-              Data="{Binding Icons.SoftwareUpdate}"
+              Data="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zM12 7l4 4h-3v4h-2v-4H8l4-4z"
               Fill="{DynamicResource UpdateDialog.ForegroundBrush}"/>
 
         <TextBlock FontWeight="Bold"

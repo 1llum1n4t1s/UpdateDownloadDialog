@@ -18,14 +18,6 @@ public sealed class UpdateDialogOptions
     /// <summary>解決された文字列セット (null セーフ アクセサ)。</summary>
     public IUpdateDialogStrings ResolvedStrings => Strings ?? DefaultStrings.Instance;
 
-    // ---------------- アイコン ----------------
-
-    /// <summary>表示アイコンセット。null の場合は <see cref="DefaultIcons.Instance"/>。</summary>
-    public IUpdateDialogIcons? Icons { get; set; }
-
-    /// <summary>解決されたアイコンセット (null セーフ アクセサ)。</summary>
-    public IUpdateDialogIcons ResolvedIcons => Icons ?? DefaultIcons.Instance;
-
     // ---------------- ウィンドウ chrome / サイズ ----------------
 
     /// <summary>ウィンドウのフレーム描画モード。既定 = <see cref="WindowChromeMode.Custom"/>。</summary>

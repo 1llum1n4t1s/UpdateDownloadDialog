@@ -30,15 +30,11 @@ await UpdateDialogWindow.ShowAsync(parentWindow, mgr);
 ```csharp
 // 例: MyJapaneseStrings は IUpdateDialogStrings を実装するユーザー定義クラス。
 //     最小実装は samples/DemoApp/MainWindow.axaml.cs の JapaneseStrings を参照。
-// 例: MyIcons は IUpdateDialogIcons を実装するユーザー定義クラス。
 
 var options = new UpdateDialogOptions
 {
     // 表示文字列を差し替え（日本語 etc.）
     Strings = new MyJapaneseStrings(),
-
-    // アイコンセットを差し替え
-    Icons = MyIcons.Instance,
 
     // 大昔の SelfUpdate 風: ウィンドウ固定サイズ（デフォルト）
     ResizeMode = WindowResizeMode.Fixed,
@@ -118,7 +114,6 @@ await vm.CheckAsync(manualCheck: true);
 | 拡張点 | インターフェース | 差し替え方法 |
 |---|---|---|
 | 文字列 (タイトル / ボタン / メッセージ) | `IUpdateDialogStrings` | `UpdateDialogOptions.Strings` |
-| アイコン (Geometry 5 種) | `IUpdateDialogIcons` | `UpdateDialogOptions.Icons` |
 | 配色 (アクセント) | `IBrush` | `UpdateDialogOptions.AccentBrush` |
 | テーマ全体 (Light/Dark) | `ThemeVariant` | ホストアプリ側 `Application.RequestedThemeVariant` |
 | 無視永続化 | `event Action<string>` | `UpdateDialogOptions.VersionIgnored` |
