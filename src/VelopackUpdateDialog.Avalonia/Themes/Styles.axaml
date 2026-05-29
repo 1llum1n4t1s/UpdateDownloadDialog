@@ -21,4 +21,42 @@
     <Setter Property="Opacity" Value="0.7"/>
   </Style>
 
+  <!-- secondary ボタン: 枠線付き・控えめ背景。primary と角丸/サイズ/Padding を揃え、
+       見た目をすべてライブラリ側で固定する (ホストアプリのテーマ ControlCornerRadius 等の漏れを防ぐ) -->
+  <Style Selector="Button.secondary">
+    <Setter Property="Background" Value="Transparent"/>
+    <Setter Property="Foreground" Value="{DynamicResource UpdateDialog.ForegroundBrush}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource UpdateDialog.BorderBrush}"/>
+    <Setter Property="BorderThickness" Value="1"/>
+    <Setter Property="Padding" Value="12,4"/>
+    <Setter Property="CornerRadius" Value="4"/>
+    <Setter Property="MinWidth" Value="80"/>
+  </Style>
+
+  <Style Selector="Button.secondary:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource UpdateDialog.BorderBrush}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource UpdateDialog.BorderBrush}"/>
+  </Style>
+
+  <Style Selector="Button.secondary:pressed /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource UpdateDialog.BorderBrush}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource UpdateDialog.BorderBrush}"/>
+    <Setter Property="Opacity" Value="0.7"/>
+  </Style>
+
+  <!-- タイトルバーの閉じるボタン: 矩形 (角丸0) に固定し、ホバー/押下背景もライブラリの色で描く。
+       これでホストテーマの ControlCornerRadius / ボタンホバー色が漏れてこない -->
+  <Style Selector="Button.titlebar-close">
+    <Setter Property="CornerRadius" Value="0"/>
+  </Style>
+
+  <Style Selector="Button.titlebar-close:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource UpdateDialog.BorderBrush}"/>
+  </Style>
+
+  <Style Selector="Button.titlebar-close:pressed /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource UpdateDialog.BorderBrush}"/>
+    <Setter Property="Opacity" Value="0.7"/>
+  </Style>
+
 </Styles>

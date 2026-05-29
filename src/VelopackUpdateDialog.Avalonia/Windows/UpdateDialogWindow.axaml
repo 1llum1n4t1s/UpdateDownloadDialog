@@ -64,6 +64,7 @@
                    IsHitTestVisible="False"/>
 
         <Button x:Name="BtnClose"
+                Classes="titlebar-close"
                 HorizontalAlignment="Right"
                 VerticalAlignment="Stretch"
                 Width="46"
