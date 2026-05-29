@@ -14,7 +14,7 @@ namespace VelopackUpdateDialog;
 /// 更新ダイアログの状態機械と Velopack 連携を司る ViewModel。
 /// Window / UserControl いずれの提供レイヤーからも DataContext として再利用される。
 /// </summary>
-public sealed partial class UpdateDialogViewModel : ObservableObject
+public sealed partial class UpdateDialogViewModel : ObservableObject, IDisposable
 {
     private static readonly ILog log = LogManager.GetLogger(typeof(UpdateDialogViewModel));
 
@@ -69,9 +69,6 @@ public sealed partial class UpdateDialogViewModel : ObservableObject
 
     /// <summary>解決された文字列セット。XAML バインディング用。</summary>
     public IUpdateDialogStrings Strings => Options.ResolvedStrings;
-
-    /// <summary>解決されたアイコンセット。XAML バインディング用。</summary>
-    public IUpdateDialogIcons Icons => Options.ResolvedIcons;
 
     /// <summary>アクセントカラー。null の場合はテーマ既定。</summary>
     public IBrush? AccentBrush => Options.AccentBrush;
@@ -195,7 +192,7 @@ public sealed partial class UpdateDialogViewModel : ObservableObject
         catch (OperationCanceledException)
         {
             FinalOutcome = UpdateOutcome.Cancelled;
-            // State を Idle に戻さないと次回 CheckAsync が L147-148 の "Checking" ガードで永久 return される
+            // State を Idle に戻さないと次回 CheckAsync 冒頭の "Checking/Downloading" ガードで永久 return される
             State = UpdateState.Idle;
             throw;
         }
@@ -211,8 +208,16 @@ public sealed partial class UpdateDialogViewModel : ObservableObject
     /// </summary>
     public Task DownloadAndApplyAsync()
     {
-        if (_updateInfo is null || State == UpdateState.Downloading)
+        if (State == UpdateState.Downloading)
             return Task.CompletedTask;
+
+        // _updateInfo 未設定で Available 状態になっている異常系 (SetAvailable を経ず State を直接代入された等)。
+        // 黙って no-op にするとダウンロードボタンが無反応に見えるため、ログに残して顕在化する。
+        if (_updateInfo is null)
+        {
+            log.InfoFormat("DownloadAndApplyAsync was called without UpdateInfo. Reach Available via CheckAsync()/SetAvailable() first.");
+            return Task.CompletedTask;
+        }
 
         _downloadCts?.Dispose();
         _downloadCts = new CancellationTokenSource();
@@ -231,14 +236,19 @@ public sealed partial class UpdateDialogViewModel : ObservableObject
                     p => Dispatcher.UIThread.Post(() => DownloadProgress = p),
                     cancelToken: token).ConfigureAwait(false);
 
-                // ApplyUpdatesAndRestart は UI スレッドでなくてもよいが、Velopack 内で
-                // プロセス再起動が走るため、ここで戻り値は事実上観測不能。
-                FinalOutcome = UpdateOutcome.Updated;
                 _manager.ApplyUpdatesAndRestart(info);
+
+                // ここに到達するのは再起動が走らなかった場合のみ (通常はプロセス終了で未到達)。
+                // Apply が失敗して例外を投げたら下の catch に入るため Updated にはならず、
+                // OnClosing で State=Failed から Failed が導出される。
+                // 非 UI スレッドからの直接代入による race を避けるため UI スレッドで確定する。
+                Dispatcher.UIThread.Post(() => FinalOutcome = UpdateOutcome.Updated);
             }
             catch (OperationCanceledException)
             {
-                FinalOutcome = UpdateOutcome.Cancelled;
+                // ダウンロードのキャンセルは「更新フロー全体のキャンセル」ではなく Available へ戻すだけ。
+                // FinalOutcome はここで確定させず OnClosing に委ねる
+                // (Available のまま普通に閉じれば Closed を正しく返せる)。
                 Dispatcher.UIThread.Post(() => State = UpdateState.Available);
             }
             catch (Exception ex)
@@ -288,6 +298,17 @@ public sealed partial class UpdateDialogViewModel : ObservableObject
                 _ => UpdateOutcome.Closed,
             };
         }
+    }
+
+    /// <summary>
+    /// ダウンロード用 <see cref="CancellationTokenSource"/> を解放する。
+    /// Window 経由で使う場合は <see cref="UpdateDialogWindow"/> が Closed 時に呼ぶ。
+    /// ViewModel を直接使うホストは破棄時に呼ぶこと。
+    /// </summary>
+    public void Dispose()
+    {
+        _downloadCts?.Dispose();
+        _downloadCts = null;
     }
 
     private readonly UpdateManager _manager;

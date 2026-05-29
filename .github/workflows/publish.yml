@@ -6,15 +6,19 @@ on:
       - 'release/**'
   workflow_dispatch:
 
+# 最小権限: このワークフローは NuGet push に NUGET_API_KEY を使い GITHUB_TOKEN を使わないため read のみで十分
+permissions:
+  contents: read
+
 jobs:
   publish:
     runs-on: windows-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v4 (pinned by SHA)
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2 (pinned by SHA)
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9  # v4 (pinned by SHA)
+        uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9  # v4.3.1 (pinned by SHA)
         with:
           dotnet-version: '10.0.x'
 

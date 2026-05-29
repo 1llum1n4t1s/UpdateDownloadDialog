@@ -10,7 +10,7 @@ Avalonia 12 で動く **Velopack 自動更新ダイアログ** の再利用可�
 dotnet add package VelopackUpdateDialog.Avalonia
 ```
 
-依存: `Avalonia 12.0.3+`, `CommunityToolkit.Mvvm 8.4.2+`, `Velopack 0.0.1298+`, TFM `net10.0`。
+依存: `Avalonia 12.0.4+`, `CommunityToolkit.Mvvm 8.4.2+`, `Velopack 1.0.1+`, TFM `net10.0`。
 
 > 📦 **PackageId と namespace について**: NuGet パッケージ名は `VelopackUpdateDialog.Avalonia` ですが、C# namespace は `VelopackUpdateDialog`（`.Avalonia` 接尾辞なし）です。将来の WPF/WinForms 派生パッケージとの namespace 共有を見越した設計です。
 
@@ -30,15 +30,11 @@ await UpdateDialogWindow.ShowAsync(parentWindow, mgr);
 ```csharp
 // 例: MyJapaneseStrings は IUpdateDialogStrings を実装するユーザー定義クラス。
 //     最小実装は samples/DemoApp/MainWindow.axaml.cs の JapaneseStrings を参照。
-// 例: MyIcons は IUpdateDialogIcons を実装するユーザー定義クラス。
 
 var options = new UpdateDialogOptions
 {
     // 表示文字列を差し替え（日本語 etc.）
     Strings = new MyJapaneseStrings(),
-
-    // アイコンセットを差し替え
-    Icons = MyIcons.Instance,
 
     // 大昔の SelfUpdate 風: ウィンドウ固定サイズ（デフォルト）
     ResizeMode = WindowResizeMode.Fixed,
@@ -118,7 +114,6 @@ await vm.CheckAsync(manualCheck: true);
 | 拡張点 | インターフェース | 差し替え方法 |
 |---|---|---|
 | 文字列 (タイトル / ボタン / メッセージ) | `IUpdateDialogStrings` | `UpdateDialogOptions.Strings` |
-| アイコン (Geometry 5 種) | `IUpdateDialogIcons` | `UpdateDialogOptions.Icons` |
 | 配色 (アクセント) | `IBrush` | `UpdateDialogOptions.AccentBrush` |
 | テーマ全体 (Light/Dark) | `ThemeVariant` | ホストアプリ側 `Application.RequestedThemeVariant` |
 | 無視永続化 | `event Action<string>` | `UpdateDialogOptions.VersionIgnored` |
@@ -155,17 +150,21 @@ await vm.CheckAsync(manualCheck: true);
 
 ## ロギング
 
-本ライブラリは [SuperLightLogger](https://www.nuget.org/packages/SuperLightLogger/) を内部で使用しており、状態遷移と失敗時のスタックトレースを log4net 互換 API で出力する。ホストアプリで以下を設定すると拾える:
+本ライブラリは [SuperLightLogger](https://www.nuget.org/packages/SuperLightLogger/) を内部で使用しており、状態遷移と失敗時のスタックトレースを `Microsoft.Extensions.Logging` 抽象で出力する。ホストアプリで以下を設定すると拾える（コンソール出力には `Microsoft.Extensions.Logging.Console` パッケージが必要）:
 
 ```csharp
+using Microsoft.Extensions.Logging;
+
 SuperLightLogger.LogManager.Configure(builder =>
 {
     builder.AddConsole();
-    builder.SetMinimumLevel("Information");
+    builder.SetMinimumLevel(LogLevel.Information);
 });
 ```
 
 設定しなくても `Options.ErrorOccurred` イベントで失敗時の `Exception` が 1 回通知されるが、運用環境ではロガー設定を推奨する。
+
+> ⚠️ **起動時の自動チェックを fire-and-forget (`_ = ShowAsync(...)`) で呼ぶ場合**、戻り値の `UpdateDialogResult` を見ないため、失敗を観測する手段が `Options.ErrorOccurred` の購読かロガー設定だけになる。プロキシ遮断・TLS 失敗などを静かに見逃さないよう、**自動チェック時は最低でも `ErrorOccurred` を購読する**ことを推奨する。
 
 ## Troubleshooting
 

@@ -18,14 +18,6 @@ public sealed class UpdateDialogOptions
     /// <summary>解決された文字列セット (null セーフ アクセサ)。</summary>
     public IUpdateDialogStrings ResolvedStrings => Strings ?? DefaultStrings.Instance;
 
-    // ---------------- アイコン ----------------
-
-    /// <summary>表示アイコンセット。null の場合は <see cref="DefaultIcons.Instance"/>。</summary>
-    public IUpdateDialogIcons? Icons { get; set; }
-
-    /// <summary>解決されたアイコンセット (null セーフ アクセサ)。</summary>
-    public IUpdateDialogIcons ResolvedIcons => Icons ?? DefaultIcons.Instance;
-
     // ---------------- ウィンドウ chrome / サイズ ----------------
 
     /// <summary>ウィンドウのフレーム描画モード。既定 = <see cref="WindowChromeMode.Custom"/>。</summary>
@@ -70,10 +62,14 @@ public sealed class UpdateDialogOptions
     // ---------------- コールバック / イベント ----------------
 
     /// <summary>ユーザーが「このバージョンを無視」を押した時に発火。
-    /// ホスト側で Preferences 等への永続化を行う想定。</summary>
+    /// ホスト側で Preferences 等への永続化を行う想定。
+    /// <para>このオプションは 1 ダイアログ呼び出しにつき 1 インスタンスの利用を想定する。
+    /// 同一インスタンスを使い回してハンドラを毎回登録すると、二重発火やハンドラがキャプチャした
+    /// オブジェクト (UI 要素等) の購読者リークの原因になる。</para></summary>
     public event Action<string>? VersionIgnored;
 
-    /// <summary>例外発生時に発火。ホスト側のロガーへ流す想定。</summary>
+    /// <summary>例外発生時に発火。ホスト側のロガーへ流す想定。
+    /// 使い回し時の注意は <see cref="VersionIgnored"/> と同じ。</summary>
     public event Action<Exception>? ErrorOccurred;
 
     internal void RaiseVersionIgnored(string tagName) => VersionIgnored?.Invoke(tagName);

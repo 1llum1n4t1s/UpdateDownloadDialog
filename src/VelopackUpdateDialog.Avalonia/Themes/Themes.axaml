@@ -42,4 +42,8 @@
     </ResourceDictionary>
 
   </ResourceDictionary.ThemeDictionaries>
+
+  <!-- アイコン Geometry (Light/Dark 共通: 形状はテーマ非依存。色は Path.Fill 側で DynamicResource 解決) -->
+  <StreamGeometry x:Key="UpdateDialog.InfoGeometry">M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z</StreamGeometry>
+
 </ResourceDictionary>
