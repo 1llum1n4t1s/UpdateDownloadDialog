@@ -178,12 +178,7 @@ public partial class UpdateDialogWindow : Window
     private void ApplyOptions(UpdateDialogOptions options)
     {
         // chrome
-        // macOS では「拡張クライアント領域 (アクリル用) + SizeToContent + リサイズ不可」の組み合わせで
-        // ウィンドウの measure が取り違えられ、状態遷移時にコンテンツが切れる (横クリップ)。
-        // そのため macOS では Custom 指定でも System chrome (OS ネイティブのタイトルバー + ソリッド背景) に
-        // フォールバックして堅牢化する。Windows / Linux は要求通りの chrome を使う。
-        WindowChromeMode chromeMode = OperatingSystem.IsMacOS() ? WindowChromeMode.System : options.ChromeMode;
-        switch (chromeMode)
+        switch (options.ChromeMode)
         {
             case WindowChromeMode.System:
                 // OS タイトルバーとアクリル背景は視覚的に両立しないので、
@@ -216,6 +211,15 @@ public partial class UpdateDialogWindow : Window
                     SizeToContent = SizeToContent.Manual;
                     Width = fixedSize.Width;
                     Height = fixedSize.Height;
+                }
+                else if (OperatingSystem.IsMacOS())
+                {
+                    // macOS は SizeToContent の measure がタイミング依存で、状態遷移
+                    // (Checking→Available 等) や初回 measure で幅を racy に狭く取り違えて
+                    // 横クリップを間欠的に起こす。最小幅の床を入れると、狭く出た値も
+                    // この床まで持ち上がって全状態が同一幅に揃い、遷移時の再サイズ
+                    // (= レースの発火点) が消える。高さは従来どおりコンテンツに追従させる。
+                    MinWidth = UpdateDialogDefaults.MacFixedMinWidth;
                 }
                 break;
 
