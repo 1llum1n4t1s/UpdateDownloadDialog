@@ -20,7 +20,10 @@ public sealed class UpdateDialogOptions
 
     // ---------------- ウィンドウ chrome / サイズ ----------------
 
-    /// <summary>ウィンドウのフレーム描画モード。既定 = <see cref="WindowChromeMode.Custom"/>。</summary>
+    /// <summary>ウィンドウのフレーム描画モード。既定 = <see cref="WindowChromeMode.Custom"/>。
+    /// <para>macOS では拡張クライアント領域 (アクリル) + SizeToContent の組み合わせがコンテンツの
+    /// クリップを起こすため、<see cref="WindowChromeMode.Custom"/> を指定しても OS ネイティブの
+    /// タイトルバー (<see cref="WindowChromeMode.System"/>) にフォールバックする。</para></summary>
     public WindowChromeMode ChromeMode { get; set; } = WindowChromeMode.Custom;
 
     /// <summary>リサイズ挙動。既定 = <see cref="WindowResizeMode.Fixed"/>。</summary>

@@ -178,7 +178,12 @@ public partial class UpdateDialogWindow : Window
     private void ApplyOptions(UpdateDialogOptions options)
     {
         // chrome
-        switch (options.ChromeMode)
+        // macOS では「拡張クライアント領域 (アクリル用) + SizeToContent + リサイズ不可」の組み合わせで
+        // ウィンドウの measure が取り違えられ、状態遷移時にコンテンツが切れる (横クリップ)。
+        // そのため macOS では Custom 指定でも System chrome (OS ネイティブのタイトルバー + ソリッド背景) に
+        // フォールバックして堅牢化する。Windows / Linux は要求通りの chrome を使う。
+        WindowChromeMode chromeMode = OperatingSystem.IsMacOS() ? WindowChromeMode.System : options.ChromeMode;
+        switch (chromeMode)
         {
             case WindowChromeMode.System:
                 // OS タイトルバーとアクリル背景は視覚的に両立しないので、
