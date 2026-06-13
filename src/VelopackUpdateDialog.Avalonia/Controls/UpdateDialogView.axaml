@@ -46,7 +46,7 @@
                    Text="{Binding Strings.AvailableHeader}"/>
         <Border Margin="4,0,0,0" Height="20" CornerRadius="10"
                 VerticalAlignment="Center"
-                Background="{Binding AccentBrush, FallbackValue={DynamicResource UpdateDialog.AccentBrush}, TargetNullValue={DynamicResource UpdateDialog.AccentBrush}}"
+                Background="{DynamicResource UpdateDialog.AccentBrush}"
                 Effect="drop-shadow(0 0 6 #40000000)">
           <TextBlock Margin="8,0" Text="{Binding AvailableTagName}" FontSize="12" Foreground="White" VerticalAlignment="Center"/>
         </Border>
@@ -101,7 +101,7 @@
                    Text="{Binding Strings.AvailableHeader}"/>
         <Border Margin="4,0,0,0" Height="20" CornerRadius="10"
                 VerticalAlignment="Center"
-                Background="{Binding AccentBrush, FallbackValue={DynamicResource UpdateDialog.AccentBrush}, TargetNullValue={DynamicResource UpdateDialog.AccentBrush}}"
+                Background="{DynamicResource UpdateDialog.AccentBrush}"
                 Effect="drop-shadow(0 0 6 #40000000)">
           <TextBlock Margin="8,0" Text="{Binding AvailableTagName}" FontSize="12" Foreground="White" VerticalAlignment="Center"/>
         </Border>

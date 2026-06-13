@@ -18,6 +18,20 @@ public partial class UpdateDialogView : UserControl
     public UpdateDialogView()
     {
         InitializeComponent();
+        DataContextChanged += OnDataContextChanged;
+    }
+
+    // Options.AccentBrush が指定されていれば、テーマリソース UpdateDialog.AccentBrush を
+    // コントロール単位で上書きする。これでアクセント色がバッジ・primary ボタン双方へ
+    // 一貫して反映される (XAML 側は素の DynamicResource を引くだけでよい)。
+    // 旧実装の Binding TargetNullValue 内 DynamicResource は Avalonia では解決されず、
+    // 既定 (AccentBrush=null) のときバッジ背景が透明になり、ライトテーマで白文字が消えていた。
+    private void OnDataContextChanged(object? sender, EventArgs e)
+    {
+        if (DataContext is UpdateDialogViewModel { Options.AccentBrush: { } accent })
+            Resources["UpdateDialog.AccentBrush"] = accent;
+        else
+            Resources.Remove("UpdateDialog.AccentBrush");
     }
 
     private async void OnDownloadAndInstall(object? sender, RoutedEventArgs e)

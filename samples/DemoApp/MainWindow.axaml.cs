@@ -3,6 +3,7 @@ using System.IO;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
+using Avalonia.Styling;
 using Velopack;
 using Velopack.Sources;
 using VelopackUpdateDialog;
@@ -46,6 +47,19 @@ public partial class MainWindow : Window
     }
 
     // ---------------- イベントハンドラ ----------------
+
+    private void OnThemeChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (Application.Current is not { } app || sender is not ComboBox combo)
+            return;
+
+        app.RequestedThemeVariant = combo.SelectedIndex switch
+        {
+            1 => ThemeVariant.Light,
+            2 => ThemeVariant.Dark,
+            _ => ThemeVariant.Default,
+        };
+    }
 
     private void OnShowAvailable(object? sender, RoutedEventArgs e)
     {

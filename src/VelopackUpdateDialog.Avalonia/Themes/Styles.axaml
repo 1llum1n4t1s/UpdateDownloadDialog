@@ -24,7 +24,7 @@
   <!-- secondary ボタン: 枠線付き・控えめ背景。primary と角丸/サイズ/Padding を揃え、
        見た目をすべてライブラリ側で固定する (ホストアプリのテーマ ControlCornerRadius 等の漏れを防ぐ) -->
   <Style Selector="Button.secondary">
-    <Setter Property="Background" Value="Transparent"/>
+    <Setter Property="Background" Value="{DynamicResource UpdateDialog.ControlFillBrush}"/>
     <Setter Property="Foreground" Value="{DynamicResource UpdateDialog.ForegroundBrush}"/>
     <Setter Property="BorderBrush" Value="{DynamicResource UpdateDialog.BorderBrush}"/>
     <Setter Property="BorderThickness" Value="1"/>
@@ -34,12 +34,12 @@
   </Style>
 
   <Style Selector="Button.secondary:pointerover /template/ ContentPresenter">
-    <Setter Property="Background" Value="{DynamicResource UpdateDialog.BorderBrush}"/>
+    <Setter Property="Background" Value="{DynamicResource UpdateDialog.ControlFillHoverBrush}"/>
     <Setter Property="BorderBrush" Value="{DynamicResource UpdateDialog.BorderBrush}"/>
   </Style>
 
   <Style Selector="Button.secondary:pressed /template/ ContentPresenter">
-    <Setter Property="Background" Value="{DynamicResource UpdateDialog.BorderBrush}"/>
+    <Setter Property="Background" Value="{DynamicResource UpdateDialog.ControlFillHoverBrush}"/>
     <Setter Property="BorderBrush" Value="{DynamicResource UpdateDialog.BorderBrush}"/>
     <Setter Property="Opacity" Value="0.7"/>
   </Style>

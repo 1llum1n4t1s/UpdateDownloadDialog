@@ -12,6 +12,9 @@
       <Color x:Key="UpdateDialog.AccentColor">#FF0066FF</Color>
       <Color x:Key="UpdateDialog.SuccessColor">#FF1FA851</Color>
       <Color x:Key="UpdateDialog.ErrorColor">#FFDA3D3D</Color>
+      <!-- secondary ボタン面: 白背景から浮く程度の薄いグレー。枠線だけでは同化するため塗りで差をつける -->
+      <Color x:Key="UpdateDialog.ControlFillColor">#FFEDEDED</Color>
+      <Color x:Key="UpdateDialog.ControlFillHoverColor">#FFDFDFDF</Color>
 
       <SolidColorBrush x:Key="UpdateDialog.WindowBackground" Color="{StaticResource UpdateDialog.WindowBackgroundColor}"/>
       <SolidColorBrush x:Key="UpdateDialog.TitleBarBrush" Color="{StaticResource UpdateDialog.TitleBarColor}"/>
@@ -20,6 +23,8 @@
       <SolidColorBrush x:Key="UpdateDialog.AccentBrush" Color="{StaticResource UpdateDialog.AccentColor}"/>
       <SolidColorBrush x:Key="UpdateDialog.SuccessBrush" Color="{StaticResource UpdateDialog.SuccessColor}"/>
       <SolidColorBrush x:Key="UpdateDialog.ErrorBrush" Color="{StaticResource UpdateDialog.ErrorColor}"/>
+      <SolidColorBrush x:Key="UpdateDialog.ControlFillBrush" Color="{StaticResource UpdateDialog.ControlFillColor}"/>
+      <SolidColorBrush x:Key="UpdateDialog.ControlFillHoverBrush" Color="{StaticResource UpdateDialog.ControlFillHoverColor}"/>
     </ResourceDictionary>
 
     <!-- Dark -->
@@ -31,6 +36,9 @@
       <Color x:Key="UpdateDialog.AccentColor">#FF4A9EFF</Color>
       <Color x:Key="UpdateDialog.SuccessColor">#FF4FCB7A</Color>
       <Color x:Key="UpdateDialog.ErrorColor">#FFFF6B6B</Color>
+      <!-- secondary ボタン面: 暗い窓背景から少し明るく浮かせる -->
+      <Color x:Key="UpdateDialog.ControlFillColor">#FF333334</Color>
+      <Color x:Key="UpdateDialog.ControlFillHoverColor">#FF3F3F41</Color>
 
       <SolidColorBrush x:Key="UpdateDialog.WindowBackground" Color="{StaticResource UpdateDialog.WindowBackgroundColor}"/>
       <SolidColorBrush x:Key="UpdateDialog.TitleBarBrush" Color="{StaticResource UpdateDialog.TitleBarColor}"/>
@@ -39,6 +47,8 @@
       <SolidColorBrush x:Key="UpdateDialog.AccentBrush" Color="{StaticResource UpdateDialog.AccentColor}"/>
       <SolidColorBrush x:Key="UpdateDialog.SuccessBrush" Color="{StaticResource UpdateDialog.SuccessColor}"/>
       <SolidColorBrush x:Key="UpdateDialog.ErrorBrush" Color="{StaticResource UpdateDialog.ErrorColor}"/>
+      <SolidColorBrush x:Key="UpdateDialog.ControlFillBrush" Color="{StaticResource UpdateDialog.ControlFillColor}"/>
+      <SolidColorBrush x:Key="UpdateDialog.ControlFillHoverBrush" Color="{StaticResource UpdateDialog.ControlFillHoverColor}"/>
     </ResourceDictionary>
 
   </ResourceDictionary.ThemeDictionaries>

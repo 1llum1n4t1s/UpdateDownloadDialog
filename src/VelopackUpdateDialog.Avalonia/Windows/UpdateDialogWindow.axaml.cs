@@ -5,6 +5,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Platform;
 using Velopack;
 using Velopack.Sources;
 
@@ -28,6 +29,7 @@ public partial class UpdateDialogWindow : Window
         _viewModel = viewModel;
 
         ApplyOptions(viewModel.Options);
+        AttachBackdrop(viewModel.Options.ApplyAccentTint);
 
         // View からの閉じる要求を受けて Close する
         DialogBody.CloseRequested += (_, _) => Close();
@@ -229,6 +231,65 @@ public partial class UpdateDialogWindow : Window
         }
     }
 
+    // 背景レイヤー (アクリル / ソリッド / アクセント上乗せ) の制御を取り付ける。
+    // 透過レベル変化・Activated (設定アプリで透過を切り替えて戻ってきたケース)・
+    // OS アクセント変更に追従して再評価する。
+    private void AttachBackdrop(bool applyAccentTint)
+    {
+        _applyAccentTint = applyAccentTint;
+
+        Opened += (_, _) => UpdateBackdrop();
+        Activated += (_, _) => UpdateBackdrop();
+        PropertyChanged += (_, e) =>
+        {
+            if (e.Property == TopLevel.ActualTransparencyLevelProperty)
+            {
+                UpdateBackdrop();
+            }
+        };
+
+        if (!applyAccentTint)
+        {
+            return;
+        }
+
+        // ダイアログは短寿命なので、long-lived な PlatformSettings への購読は Closed で必ず解除する
+        var platformSettings = Application.Current?.PlatformSettings;
+        if (platformSettings is null)
+        {
+            return;
+        }
+
+        EventHandler<PlatformColorValues> onColorsChanged = (_, _) => UpdateAccentTint();
+        platformSettings.ColorValuesChanged += onColorsChanged;
+        Closed += (_, _) => platformSettings.ColorValuesChanged -= onColorsChanged;
+    }
+
+    // アクリルが実際に効かない環境 (RDP / 透過 OFF / 非対応) ではテーマ色のソリッド背景へ
+    // フォールバックする。アクリルの背後は不透明黒で、特にライトテーマでは薄い背景色が
+    // くすんだ灰色に見えてしまうため。System chrome は ApplyOptions で既にソリッド化済みだが、
+    // ここで評価しても結果は一致するので一本化する。
+    private void UpdateBackdrop()
+    {
+        var useOpaque = AcrylicFallbackHelper.ShouldUseOpaqueBackground(this);
+        AcrylicBackdrop.IsVisible = !useOpaque;
+        SolidBackdrop.IsVisible = useOpaque;
+        UpdateAccentTint();
+    }
+
+    private void UpdateAccentTint()
+    {
+        if (!_applyAccentTint)
+        {
+            AccentTint.IsVisible = false;
+            return;
+        }
+
+        var brush = AccentTintHelper.TryCreateTintBrush();
+        AccentTint.Background = brush;
+        AccentTint.IsVisible = brush is not null;
+    }
+
     private void OnTitleBarPointerPressed(object? sender, PointerPressedEventArgs e)
     {
         if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
@@ -256,4 +317,5 @@ public partial class UpdateDialogWindow : Window
     }
 
     private readonly UpdateDialogViewModel _viewModel;
+    private bool _applyAccentTint;
 }
