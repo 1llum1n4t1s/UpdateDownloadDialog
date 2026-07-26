@@ -6,8 +6,19 @@ updates:
       interval: "weekly"
     open-pull-requests-limit: 5
 
+  # ライブラリ本体と DemoApp の両方を監視する。
+  # DemoApp が監視外だと Avalonia.Desktop / Themes.Fluent / Fonts.Inter が取り残される。
   - package-ecosystem: "nuget"
-    directory: "/src/VelopackUpdateDialog.Avalonia"
+    directories:
+      - "/src/VelopackUpdateDialog.Avalonia"
+      - "/samples/DemoApp"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
+    groups:
+      # Avalonia 系は 2 プロジェクトで同一バージョンに揃える前提なので 1 PR に束ねる。
+      # 個別 PR だと Avalonia だけ上がってバージョン不整合のビルドになる。
+      avalonia:
+        patterns:
+          - "Avalonia"
+          - "Avalonia.*"
