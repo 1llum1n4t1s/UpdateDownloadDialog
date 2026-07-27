@@ -48,7 +48,7 @@ dotnet pack src/VelopackUpdateDialog.Avalonia/VelopackUpdateDialog.Avalonia.cspr
 上 2 つは下のレイヤーを内部で利用する（Window → View → ViewModel）。**ロジックは全て ViewModel に集約**されており、Window/View は薄いアダプタ。
 
 ### 状態機械（ViewModel の中核）
-- `UpdateState`（[Models/UpdateState.cs](src/VelopackUpdateDialog.Avalonia/Models/UpdateState.cs)）: `Idle → Checking → {Available | UpToDate | Failed}`、`Available → Downloading → (再起動 or 戻る)`。`[ObservableProperty]` の `State` 変更時に `OnStateChanged` が派生 bool（`IsChecking` 等、XAML バインド用）を一括 raise する。
+- `UpdateState`（[Models/UpdateState.cs](src/VelopackUpdateDialog.Avalonia/Models/UpdateState.cs)）: `Idle → Checking → {Available | UpToDate | Failed}`、`Available → Downloading → (再起動 or 戻る)`。`[ObservableProperty]` の `State` 変更時に `OnStateChanged` が派生 bool（`IsChecking` 等、XAML バインド用）を一括 raise する。**派生 bool を増やしたら `OnStateChanged` の raise 追加を忘れないこと**。View の各パネルは全て `IsVisible` バインドなので、どの `UpdateState` 値もいずれかのパネルに対応している必要がある（`Idle` は `IsPreparing` で `Checking` と同じ確認中パネルへフォールバックさせている。これが無いと空ウィンドウになる）。
 - `UpdateOutcome`（[Models/UpdateDialogResult.cs](src/VelopackUpdateDialog.Avalonia/Models/UpdateDialogResult.cs)）: ダイアログ終了時の最終分岐（`Updated / UpToDate / Ignored / Cancelled / Failed / Closed`）。`FinalOutcome` は `OnClosing()` で `State` から導出される。`ShowAsync` の戻り値 `UpdateDialogResult` に包まれる。
 
 ### `manualCheck` による表示分岐（設計の肝）
@@ -57,7 +57,11 @@ dotnet pack src/VelopackUpdateDialog.Avalonia/VelopackUpdateDialog.Avalonia.cspr
 - **自動チェック (`false`)**: ウィンドウを開かずに先にチェックし、`UpToDate`（`SuppressUpToDateOnAutoCheck` 既定 true）/ `IgnoredTagName` 一致 / `Failed` のときは **UI を一切出さず** outcome だけ返す。起動時サイレントチェック向け。
 
 ### スレッドモデル（壊しやすい箇所）
-ダウンロードは `Task.Run` のバックグラウンドで走り、進捗・状態・`FinalOutcome` の更新は必ず `Dispatcher.UIThread.Post` 経由で UI スレッドに戻す（`UpdateDialogViewModel.DownloadAndApplyAsync`）。非 UI スレッドからの直接代入は race を生むため避ける。`OperationCanceledException` のキャンセル後は `State` を `Idle` に戻す（戻さないと次回 `CheckAsync` 冒頭のガードで永久 return する）。
+ダウンロードは `Task.Run` のバックグラウンドで走り、進捗・状態・`FinalOutcome` の更新は必ず `Dispatcher.UIThread.Post` 経由で UI スレッドに戻す（`UpdateDialogViewModel.DownloadAndApplyAsync`）。非 UI スレッドからの直接代入は race を生むため避ける。
+
+`CheckAsync` の再入ガードは `State` ではなく `_checkInFlight` フラグで持ち、`finally` で解除する。**`OperationCanceledException` のキャンセル後に `State` を `Idle` へ戻さないこと**（View に Idle 専用パネルは無く、ウィンドウが閉じ切るまでの間だけ空ダイアログが露出する）。キャンセル時は `Checking` のまま維持し、`FinalOutcome` だけ `Cancelled` に確定させて rethrow する。
+
+ダウンロード用 `CancellationTokenSource` の解放はダウンロードタスク側の `finally` が行う。`Dispose()` / `CancelDownload()` は `Cancel` だけに留める（走行中の Velopack が token を保持している間に破棄すると `ObjectDisposedException` を誘発しうる）。
 
 ### カスタマイズ拡張点
 [Models/UpdateDialogOptions.cs](src/VelopackUpdateDialog.Avalonia/Models/UpdateDialogOptions.cs) が全オプションの集約。文字列差し替えは `IUpdateDialogStrings`（既定 `DefaultStrings.Instance`）、配色は `AccentBrush`、永続化フックは `VersionIgnored` / `ErrorOccurred` イベント。ウィンドウ外観は `WindowChromeMode`（System=OS フレーム / Custom=独自タイトルバー + アクリル）と `WindowResizeMode`。`ApplyOptions`（Window 側）がこれらを実 Window プロパティへ反映する。
@@ -75,7 +79,7 @@ dotnet pack src/VelopackUpdateDialog.Avalonia/VelopackUpdateDialog.Avalonia.cspr
 
 | パス | 役割 |
 |---|---|
-| `src/VelopackUpdateDialog.Avalonia/` | ライブラリ本体（`Models/` `ViewModels/` `Controls/` `Windows/` `Themes/`） |
+| `src/VelopackUpdateDialog.Avalonia/` | ライブラリ本体（`Models/` `ViewModels/` `Controls/` `Windows/` `Themes/` `Util/`） |
 | `samples/DemoApp/` | 各状態を再現する目視確認用 Avalonia アプリ |
 | `Directory.Build.props` | バージョン・パッケージメタデータ・共通ビルド設定の一元管理 |
 | `artifacts/` | `dotnet pack` 出力先 |

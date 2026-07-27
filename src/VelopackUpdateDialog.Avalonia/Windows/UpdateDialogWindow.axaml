@@ -41,11 +41,6 @@
             IsVisible="False"
             Background="{DynamicResource UpdateDialog.WindowBackground}"/>
 
-    <!-- OS アクセントカラーのごく薄い上乗せ (背景レイヤーの上・コンテンツの下) -->
-    <Border x:Name="AccentTint"
-            IsHitTestVisible="False"
-            IsVisible="False"/>
-
     <Grid RowDefinitions="Auto,*">
 
       <!-- カスタム タイトルバー (ChromeMode == Custom 時) -->

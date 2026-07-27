@@ -5,7 +5,7 @@ namespace VelopackUpdateDialog;
 /// </summary>
 public enum UpdateState
 {
-    /// <summary>未チェック / 初期状態。</summary>
+    /// <summary>未チェック / 初期状態。UI 上は <see cref="Checking"/> と同じ進捗表示にフォールバックする。</summary>
     Idle,
 
     /// <summary>GitHub Release を確認中。</summary>

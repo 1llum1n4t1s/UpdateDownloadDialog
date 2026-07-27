@@ -40,11 +40,6 @@ public sealed class UpdateDialogOptions
     /// <summary>アクセントカラー。Available 状態のバージョン バッジやプライマリ ボタンに反映。null = テーマの既定。</summary>
     public IBrush? AccentBrush { get; set; }
 
-    /// <summary>OS のアクセントカラーをウィンドウ背景にごく薄く上乗せするか。既定 = true。
-    /// ライトテーマ + 青アクセントなら背景がごく薄い水色になる。OS 側のアクセント変更にも追従する。
-    /// <see cref="UpdateDialogWindow"/> 利用時のみ効く (UserControl 単体貼り付けには影響しない)。</summary>
-    public bool ApplyAccentTint { get; set; } = true;
-
     // ---------------- 振る舞い ----------------
 
     /// <summary>「このバージョンを無視」ボタンを表示するか。既定 = true。</summary>

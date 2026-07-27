@@ -75,6 +75,8 @@ internal static class AcrylicFallbackHelper
         }
     }
 
+    // LibraryImport (.NET 7+ のソース生成 P/Invoke) は AllowUnsafeBlocks=true を要求する (SYSLIB1062)。
+    // blittable な int 1 つのためにライブラリ全体の unsafe を開ける方が損なので DllImport を維持する。
     [DllImport("user32.dll")]
     private static extern int GetSystemMetrics(int nIndex);
 }

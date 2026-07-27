@@ -103,6 +103,17 @@ public sealed partial class UpdateDialogViewModel : ObservableObject, IDisposabl
     /// <summary>State == Checking</summary>
     public bool IsChecking => State == UpdateState.Checking;
 
+    /// <summary>
+    /// 進捗表示 (確認中スピナー) を出す状態。<see cref="UpdateState.Idle"/> と
+    /// <see cref="UpdateState.Checking"/> の両方を含む。
+    /// <para>
+    /// Idle をここに含めるのは「描画するものが 1 つも無い状態」を作らないため。
+    /// Idle 用の専用 UI を持たせずに空ウィンドウを防ぐ安全網であり、XAML の確認中パネルは
+    /// <see cref="IsChecking"/> ではなくこちらにバインドする。
+    /// </para>
+    /// </summary>
+    public bool IsPreparing => State is UpdateState.Idle or UpdateState.Checking;
+
     /// <summary>State == Available</summary>
     public bool IsAvailable => State == UpdateState.Available;
 
@@ -119,6 +130,7 @@ public sealed partial class UpdateDialogViewModel : ObservableObject, IDisposabl
     {
         log.InfoFormat("State changed to {0}", value);
         OnPropertyChanged(nameof(IsChecking));
+        OnPropertyChanged(nameof(IsPreparing));
         OnPropertyChanged(nameof(IsAvailable));
         OnPropertyChanged(nameof(IsUpToDate));
         OnPropertyChanged(nameof(IsDownloading));
@@ -163,9 +175,13 @@ public sealed partial class UpdateDialogViewModel : ObservableObject, IDisposabl
     /// <param name="cancellationToken">チェックをキャンセルする際のトークン。</param>
     public async Task CheckAsync(bool manualCheck = false, CancellationToken cancellationToken = default)
     {
-        if (State is UpdateState.Checking or UpdateState.Downloading)
+        // 再入防止は State ではなく専用フラグで持つ。State に依存させると
+        // 「キャンセル後に State を Idle へ戻さないとガードが解けない」制約が生まれ、
+        // 表示中のウィンドウが描画物ゼロの Idle に落ちる (= のっぺらぼう) 原因になる。
+        if (_checkInFlight || State == UpdateState.Downloading)
             return;
 
+        _checkInFlight = true;
         State = UpdateState.Checking;
 
         try
@@ -192,14 +208,20 @@ public sealed partial class UpdateDialogViewModel : ObservableObject, IDisposabl
         catch (OperationCanceledException)
         {
             FinalOutcome = UpdateOutcome.Cancelled;
-            // State を Idle に戻さないと次回 CheckAsync 冒頭の "Checking/Downloading" ガードで永久 return される
-            State = UpdateState.Idle;
+            // State は Checking のまま維持する。ウィンドウ表示中のキャンセル
+            // (外部トークン発火 / HttpClient タイムアウトの TaskCanceledException) で
+            // 状態を巻き戻すと、Window が閉じ切るまでの間だけ空ダイアログが露出するため。
+            // 再入ガードは finally の _checkInFlight 解除で解ける。
             throw;
         }
         catch (Exception ex)
         {
             // SetFailed が ErrorOccurred を発火するため、ここでは追加 raise しない
             SetFailed(ex);
+        }
+        finally
+        {
+            _checkInFlight = false;
         }
     }
 
@@ -219,9 +241,13 @@ public sealed partial class UpdateDialogViewModel : ObservableObject, IDisposabl
             return Task.CompletedTask;
         }
 
-        _downloadCts?.Dispose();
-        _downloadCts = new CancellationTokenSource();
-        var token = _downloadCts.Token;
+        // CTS の所有権はこの後起動するダウンロードタスクにあり、破棄も finally で行う。
+        // 走行中の Velopack がまだ token を保持している間に破棄すると ObjectDisposedException を
+        // 誘発しうるため (CTS は関連操作の完了後に破棄するのが公式ガイダンス)、
+        // Dispose() / CancelDownload() 側は Cancel だけに留める。
+        var cts = new CancellationTokenSource();
+        _downloadCts = cts;
+        var token = cts.Token;
         var info = _updateInfo;
 
         State = UpdateState.Downloading;
@@ -254,6 +280,20 @@ public sealed partial class UpdateDialogViewModel : ObservableObject, IDisposabl
             catch (Exception ex)
             {
                 Dispatcher.UIThread.Post(() => SetFailed(ex));
+            }
+            finally
+            {
+                // 参照落としと破棄を UI スレッドで直列化する。_downloadCts の読み書きは
+                // CancelDownload() / Dispose() も UI スレッドから行うため、これで競合しない。
+                Dispatcher.UIThread.Post(() =>
+                {
+                    if (ReferenceEquals(_downloadCts, cts))
+                    {
+                        _downloadCts = null;
+                    }
+
+                    cts.Dispose();
+                });
             }
         });
     }
@@ -301,17 +341,22 @@ public sealed partial class UpdateDialogViewModel : ObservableObject, IDisposabl
     }
 
     /// <summary>
-    /// ダウンロード用 <see cref="CancellationTokenSource"/> を解放する。
+    /// 進行中のダウンロードをキャンセルする。
     /// Window 経由で使う場合は <see cref="UpdateDialogWindow"/> が Closed 時に呼ぶ。
     /// ViewModel を直接使うホストは破棄時に呼ぶこと。
+    /// <para>
+    /// <see cref="CancellationTokenSource"/> 自体の解放はダウンロードタスク側が完了時に行う。
+    /// まだ Velopack が token を保持している間に解放すると
+    /// <see cref="ObjectDisposedException"/> を誘発しうるため。
+    /// </para>
     /// </summary>
     public void Dispose()
     {
-        _downloadCts?.Dispose();
-        _downloadCts = null;
+        CancelDownload();
     }
 
     private readonly UpdateManager _manager;
     private UpdateInfo? _updateInfo;
+    private bool _checkInFlight;
     private CancellationTokenSource? _downloadCts;
 }

@@ -21,11 +21,11 @@
 
   <Grid Margin="16,8">
 
-    <!-- 確認中 -->
+    <!-- 確認中 (Idle も含む。どの State でも空にならないようにするための既定パネル) -->
     <StackPanel Orientation="Vertical"
                 HorizontalAlignment="Center"
                 VerticalAlignment="Center"
-                IsVisible="{Binding IsChecking}">
+                IsVisible="{Binding IsPreparing}">
       <ProgressBar IsIndeterminate="True" Width="240" Height="6"/>
       <TextBlock Margin="0,12,0,0"
                  HorizontalAlignment="Center"
@@ -107,6 +107,8 @@
         </Border>
       </StackPanel>
 
+      <!-- この Width=500 と Grid の Margin=16 は UpdateDialogDefaults.MacFixedMinWidth (540) の
+           算出根拠になっている。変更するときは両方を合わせて直すこと (macOS の横クリップ再発を防ぐため)。 -->
       <ProgressBar Minimum="0" Maximum="100"
                    Value="{Binding DownloadProgress}"
                    Height="8" Margin="0,8,0,0" Width="500"/>

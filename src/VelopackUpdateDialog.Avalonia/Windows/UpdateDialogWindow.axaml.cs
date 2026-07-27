@@ -1,11 +1,9 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
-using Avalonia.Platform;
 using Velopack;
 using Velopack.Sources;
 
@@ -29,7 +27,7 @@ public partial class UpdateDialogWindow : Window
         _viewModel = viewModel;
 
         ApplyOptions(viewModel.Options);
-        AttachBackdrop(viewModel.Options.ApplyAccentTint);
+        AttachBackdrop();
 
         // View からの閉じる要求を受けて Close する
         DialogBody.CloseRequested += (_, _) => Close();
@@ -114,19 +112,7 @@ public partial class UpdateDialogWindow : Window
         // 手動チェック時のみ、ウィンドウ表示と並行してチェックを開始する
         if (manualCheck)
         {
-            _ = vm.CheckAsync(manualCheck: true, cancellationToken).ContinueWith(t =>
-            {
-                if (t.IsFaulted && t.Exception?.InnerException is { } ex)
-                {
-                    Avalonia.Threading.Dispatcher.UIThread.Post(() => vm.SetFailed(ex));
-                }
-                else if (t.IsCanceled)
-                {
-                    // cancellationToken 発火時はキャンセルなので「最新版です」と誤表示せず、ウィンドウを閉じる。
-                    // FinalOutcome は CheckAsync 内で既に Cancelled に確定済み (表示と戻り値が整合する)。
-                    Avalonia.Threading.Dispatcher.UIThread.Post(() => window.Close());
-                }
-            }, TaskScheduler.Default);
+            _ = RunManualCheckAsync(vm, window, cancellationToken);
         }
 
         if (owner is not null)
@@ -137,18 +123,56 @@ public partial class UpdateDialogWindow : Window
         return new UpdateDialogResult(vm.FinalOutcome, vm.FinalError);
     }
 
+    // 手動チェックをウィンドウ表示と並行して走らせる。ShowAsync は UI スレッドから呼ばれ、
+    // CheckAsync も ConfigureAwait(true) で UI スレッドへ戻るため、ここでの後処理は UI スレッド上で動く。
+    private static async Task RunManualCheckAsync(
+        UpdateDialogViewModel vm, UpdateDialogWindow window, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await vm.CheckAsync(manualCheck: true, cancellationToken).ConfigureAwait(true);
+        }
+        catch (OperationCanceledException)
+        {
+            // キャンセル時は「最新版です」と誤表示せず、ウィンドウを閉じる。
+            // FinalOutcome は CheckAsync 内で既に Cancelled に確定済み (表示と戻り値が整合する)。
+            window.Close();
+        }
+        catch (Exception ex)
+        {
+            vm.SetFailed(ex);
+        }
+    }
+
     private static Task ShowStandaloneAsync(Window window)
     {
-        var tcs = new TaskCompletionSource<object?>();
+        // Closed ハンドラから完了させるので、継続 (ShowAsync の残り) が
+        // ウィンドウ破棄処理のスタック上でインライン実行されないようにする。
+        var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         EventHandler? handler = null;
         handler = (_, _) =>
         {
             window.Closed -= handler;
-            tcs.TrySetResult(null);
+            tcs.TrySetResult();
         };
         window.Closed += handler;
         window.Show();
         return tcs.Task;
+    }
+
+    /// <inheritdoc />
+    protected override void OnKeyDown(KeyEventArgs e)
+    {
+        // Esc で閉じる (一般的なダイアログの挙動)。
+        // ダウンロード中に閉じてよいかは OnClosing 側の AllowCloseDuringDownload 判定に委ねる。
+        if (!e.Handled && e.Key == Key.Escape)
+        {
+            Close();
+            e.Handled = true;
+            return;
+        }
+
+        base.OnKeyDown(e);
     }
 
     /// <inheritdoc />
@@ -240,13 +264,10 @@ public partial class UpdateDialogWindow : Window
         }
     }
 
-    // 背景レイヤー (アクリル / ソリッド / アクセント上乗せ) の制御を取り付ける。
-    // 透過レベル変化・Activated (設定アプリで透過を切り替えて戻ってきたケース)・
-    // OS アクセント変更に追従して再評価する。
-    private void AttachBackdrop(bool applyAccentTint)
+    // 背景レイヤー (アクリル / ソリッド) の制御を取り付ける。
+    // 透過レベル変化・Activated (設定アプリで透過を切り替えて戻ってきたケース) に追従して再評価する。
+    private void AttachBackdrop()
     {
-        _applyAccentTint = applyAccentTint;
-
         Opened += (_, _) => UpdateBackdrop();
         Activated += (_, _) => UpdateBackdrop();
         PropertyChanged += (_, e) =>
@@ -256,22 +277,6 @@ public partial class UpdateDialogWindow : Window
                 UpdateBackdrop();
             }
         };
-
-        if (!applyAccentTint)
-        {
-            return;
-        }
-
-        // ダイアログは短寿命なので、long-lived な PlatformSettings への購読は Closed で必ず解除する
-        var platformSettings = Application.Current?.PlatformSettings;
-        if (platformSettings is null)
-        {
-            return;
-        }
-
-        EventHandler<PlatformColorValues> onColorsChanged = (_, _) => UpdateAccentTint();
-        platformSettings.ColorValuesChanged += onColorsChanged;
-        Closed += (_, _) => platformSettings.ColorValuesChanged -= onColorsChanged;
     }
 
     // アクリルが実際に効かない環境 (RDP / 透過 OFF / 非対応) ではテーマ色のソリッド背景へ
@@ -283,20 +288,6 @@ public partial class UpdateDialogWindow : Window
         var useOpaque = AcrylicFallbackHelper.ShouldUseOpaqueBackground(this);
         AcrylicBackdrop.IsVisible = !useOpaque;
         SolidBackdrop.IsVisible = useOpaque;
-        UpdateAccentTint();
-    }
-
-    private void UpdateAccentTint()
-    {
-        if (!_applyAccentTint)
-        {
-            AccentTint.IsVisible = false;
-            return;
-        }
-
-        var brush = AccentTintHelper.TryCreateTintBrush();
-        AccentTint.Background = brush;
-        AccentTint.IsVisible = brush is not null;
     }
 
     private void OnTitleBarPointerPressed(object? sender, PointerPressedEventArgs e)
@@ -326,5 +317,4 @@ public partial class UpdateDialogWindow : Window
     }
 
     private readonly UpdateDialogViewModel _viewModel;
-    private bool _applyAccentTint;
 }

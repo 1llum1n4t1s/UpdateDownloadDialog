@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
@@ -79,6 +80,37 @@ public partial class MainWindow : Window
     private void OnShowChecking(object? sender, RoutedEventArgs e)
     {
         ShowWithState(UpdateState.Checking);
+    }
+
+    // Idle でも空ウィンドウ (のっぺらぼう) にならず、確認中表示へフォールバックすることの回帰確認用。
+    private void OnShowIdle(object? sender, RoutedEventArgs e)
+    {
+        ShowWithState(UpdateState.Idle);
+    }
+
+    // 確認中のキャンセル経路の目視確認。ライブラリ内部では
+    // 「State は Checking のまま維持 → FinalOutcome=Cancelled → ウィンドウを閉じる」と遷移するので、
+    // 閉じ切るまでの間に空ダイアログが露出しないことをここで確認する。
+    //
+    // ShowAsync + CancellationToken で本物のキャンセルを再現できないのは、DemoApp の UpdateManager が
+    // 未インストール状態 (IsInstalled=false) で、CheckAsync が token を見る前に UpToDate へ抜けるため。
+    // 見え方は同じなので、Checking 表示のまま自動クローズさせて代用する。
+    private async void OnShowCancelled(object? sender, RoutedEventArgs e)
+    {
+        var vm = CreateVm();
+        vm.State = UpdateState.Checking;
+
+        var window = new UpdateDialogWindow(vm);
+        _ = CloseAfterDelayAsync(window);
+        await window.ShowDialog(this);
+
+        ResultLabel.Text = $"Outcome: {vm.FinalOutcome} (キャンセル相当)";
+    }
+
+    private static async Task CloseAfterDelayAsync(Window window)
+    {
+        await Task.Delay(TimeSpan.FromSeconds(1.5));
+        window.Close();
     }
 
     private void OnShowDownloading(object? sender, RoutedEventArgs e)

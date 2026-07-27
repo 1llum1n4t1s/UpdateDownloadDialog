@@ -46,7 +46,6 @@ var options = new UpdateDialogOptions
 
     ChromeMode = WindowChromeMode.Custom,  // OS フレームを使うなら System
     AccentBrush = Brushes.DodgerBlue,
-    ApplyAccentTint = true,                // OS アクセント色を背景にごく薄く上乗せ (既定 true)
     AllowIgnoreVersion = true,
     AllowCloseDuringDownload = true,
     SuppressUpToDateOnAutoCheck = true,
@@ -116,7 +115,6 @@ await vm.CheckAsync(manualCheck: true);
 |---|---|---|
 | 文字列 (タイトル / ボタン / メッセージ) | `IUpdateDialogStrings` | `UpdateDialogOptions.Strings` |
 | 配色 (アクセント) | `IBrush` | `UpdateDialogOptions.AccentBrush` |
-| 背景へのアクセント上乗せ | `bool` | `UpdateDialogOptions.ApplyAccentTint` (既定 true。アクリル非対応環境では自動でソリッド背景にフォールバック) |
 | テーマ全体 (Light/Dark) | `ThemeVariant` | ホストアプリ側 `Application.RequestedThemeVariant` |
 | 無視永続化 | `event Action<string>` | `UpdateDialogOptions.VersionIgnored` |
 | エラー通知 | `event Action<Exception>` | `UpdateDialogOptions.ErrorOccurred` |

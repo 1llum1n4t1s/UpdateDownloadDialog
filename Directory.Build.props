@@ -1,6 +1,6 @@
 <Project>
   <PropertyGroup>
-    <Version>1.0.12</Version>
+    <Version>1.0.13</Version>
     <Authors>ゆろち</Authors>
     <Copyright>Copyright (c) 2026 ゆろち</Copyright>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>

@@ -37,7 +37,7 @@
         </ComboBox>
       </StackPanel>
 
-      <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto" Margin="0,12,0,0">
+      <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" Margin="0,12,0,0">
 
         <Button Grid.Row="0" Grid.Column="0"
                 Margin="0,0,8,8"
@@ -64,20 +64,32 @@
                 Click="OnShowChecking"/>
 
         <Button Grid.Row="2" Grid.Column="0"
-                Grid.ColumnSpan="2"
-                Margin="0,0,0,8"
+                Margin="0,0,8,8"
                 HorizontalAlignment="Stretch"
                 Content="Show: Downloading (ダウンロード中, 35%)"
                 Click="OnShowDownloading"/>
 
+        <Button Grid.Row="2" Grid.Column="1"
+                Margin="0,0,0,8"
+                HorizontalAlignment="Stretch"
+                Content="Show: Idle (空にならないか確認)"
+                Click="OnShowIdle"/>
+
         <Button Grid.Row="3" Grid.Column="0"
+                Grid.ColumnSpan="2"
+                Margin="0,0,0,8"
+                HorizontalAlignment="Stretch"
+                Content="Show: キャンセル経路 (確認中のまま 1.5 秒で自動クローズ)"
+                Click="OnShowCancelled"/>
+
+        <Button Grid.Row="4" Grid.Column="0"
                 Grid.ColumnSpan="2"
                 Margin="0,0,0,8"
                 HorizontalAlignment="Stretch"
                 Content="Show: Resizable + System chrome (可変ウィンドウ)"
                 Click="OnShowResizableSystem"/>
 
-        <Button Grid.Row="4" Grid.Column="0"
+        <Button Grid.Row="5" Grid.Column="0"
                 Grid.ColumnSpan="2"
                 Margin="0,0,0,8"
                 HorizontalAlignment="Stretch"
