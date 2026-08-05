@@ -29,9 +29,7 @@
     <ExperimentalAcrylicBorder x:Name="AcrylicBackdrop" IsHitTestVisible="False">
       <ExperimentalAcrylicBorder.Material>
         <ExperimentalAcrylicMaterial BackgroundSource="Digger"
-                                     MaterialOpacity="0.85"
-                                     TintColor="{DynamicResource UpdateDialog.WindowBackgroundColor}"
-                                     TintOpacity="0.9"/>
+                                     TintColor="{DynamicResource UpdateDialog.WindowBackgroundColor}"/>
       </ExperimentalAcrylicBorder.Material>
     </ExperimentalAcrylicBorder>
 

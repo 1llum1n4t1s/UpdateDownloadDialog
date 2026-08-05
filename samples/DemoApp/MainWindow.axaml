@@ -13,9 +13,7 @@
     <ExperimentalAcrylicBorder IsHitTestVisible="False">
       <ExperimentalAcrylicBorder.Material>
         <ExperimentalAcrylicMaterial BackgroundSource="Digger"
-                                     MaterialOpacity="0.85"
-                                     TintColor="{DynamicResource Demo.AcrylicTint}"
-                                     TintOpacity="0.9"/>
+                                     TintColor="{DynamicResource Demo.AcrylicTint}"/>
       </ExperimentalAcrylicBorder.Material>
     </ExperimentalAcrylicBorder>
 
