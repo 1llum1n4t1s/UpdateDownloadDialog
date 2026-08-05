@@ -4,6 +4,9 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Tokyo"
     open-pull-requests-limit: 5
 
   # ライブラリ本体と DemoApp の両方を監視する。
@@ -14,6 +17,9 @@ updates:
       - "/samples/DemoApp"
     schedule:
       interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Tokyo"
     open-pull-requests-limit: 5
     groups:
       # Avalonia 系は 2 プロジェクトで同一バージョンに揃える前提なので 1 PR に束ねる。
