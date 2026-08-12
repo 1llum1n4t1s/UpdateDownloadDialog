@@ -1,10 +1,10 @@
-# CLAUDE.md
+# AGENTS.md
 
-This file provides guidance to Claude Code when working in this repository.
+This file provides guidance to Codex when working in this repository.
 
 ## このリポジトリの概要
 
-Avalonia 12 上で動く **Velopack 自動更新ダイアログ** の再利用可能 NuGet パッケージ。利用者向けドキュメント（インストール・使い方・オプション一覧）は [README.md](README.md) を正とする。本ファイルは開発者・Claude Code などのコーディングエージェント向けに、リポジトリ構造とビルド・設計上の非自明な約束事を記す。
+Avalonia 12 上で動く **Velopack 自動更新ダイアログ** の再利用可能 NuGet パッケージ。利用者向けドキュメント（インストール・使い方・オプション一覧）は [README.md](README.md) を正とする。本ファイルは開発者・Codex などのコーディングエージェント向けに、リポジトリ構造とビルド・設計上の非自明な約束事を記す。
 
 ## ビルド / 実行コマンド
 
@@ -35,7 +35,7 @@ dotnet pack src/VelopackUpdateDialog.Avalonia/VelopackUpdateDialog.Avalonia.cspr
 将来の WPF/WinForms 派生との namespace 共有を見越した意図的な設計。新規ファイルの namespace は必ず `VelopackUpdateDialog` にする。XAML 側は `xmlns:upd="using:VelopackUpdateDialog"`。
 
 ### バージョン番号は触らない
-`<Version>` は [Directory.Build.props](Directory.Build.props) で一元管理。コード修正のついでに勝手に上げない。バージョン更新が必要なら `/vava` ワークフローを提案する（グローバル CLAUDE.md の方針）。
+`<Version>` は [Directory.Build.props](Directory.Build.props) で一元管理。コード修正のついでに勝手に上げない。バージョン更新が必要なら `/vava` ワークフローを提案する（グローバル AGENTS.md の方針）。
 
 ## アーキテクチャ（big picture）
 
