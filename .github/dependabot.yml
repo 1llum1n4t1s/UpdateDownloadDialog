@@ -8,6 +8,10 @@ updates:
       time: "09:00"
       timezone: "Asia/Tokyo"
     open-pull-requests-limit: 5
+    groups:
+      actions-minor-patch:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
 
   # ライブラリ本体と DemoApp の両方を監視する。
   # DemoApp が監視外だと Avalonia.Desktop / Themes.Fluent / Fonts.Inter が取り残される。
@@ -28,3 +32,7 @@ updates:
         patterns:
           - "Avalonia"
           - "Avalonia.*"
+        update-types: ["minor", "patch"]
+      nuget-minor-patch:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
