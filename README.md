@@ -10,7 +10,7 @@ Avalonia 12 で動く **Velopack 自動更新ダイアログ** の再利用可�
 dotnet add package VelopackUpdateDialog.Avalonia
 ```
 
-依存: `Avalonia 12.0.4+`, `CommunityToolkit.Mvvm 8.4.2+`, `Velopack 1.0.1+`, TFM `net10.0`。
+依存: `Avalonia 12.1.1+`, `CommunityToolkit.Mvvm 8.4.2+`, `Velopack 1.2.0+`, TFM `net10.0`。
 
 > 📦 **PackageId と namespace について**: NuGet パッケージ名は `VelopackUpdateDialog.Avalonia` ですが、C# namespace は `VelopackUpdateDialog`（`.Avalonia` 接尾辞なし）です。将来の WPF/WinForms 派生パッケージとの namespace 共有を見越した設計です。
 
