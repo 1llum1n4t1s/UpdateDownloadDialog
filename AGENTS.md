@@ -9,10 +9,13 @@ Avalonia 12 上で動く **Velopack 自動更新ダイアログ** の再利用�
 ## ビルド / 実行コマンド
 
 ```powershell
-# ソリューション全体ビルド（ライブラリ + DemoApp）
+# ソリューション全体ビルド（ライブラリ + DemoApp + 回帰テスト）
 dotnet build VelopackUpdateDialog.Avalonia.slnx -c Release
 
-# DemoApp を起動して各状態のダイアログを目視確認（テストプロジェクトは無いのでこれが動作確認手段）
+# ダウンロード終了・適用開始・Window close の競合と終了後 callback の回帰テスト
+dotnet run --project tests/VelopackUpdateDialog.Avalonia.RegressionTests/VelopackUpdateDialog.Avalonia.RegressionTests.csproj -c Release
+
+# DemoApp を起動して各状態のダイアログを目視確認
 dotnet run --project samples/DemoApp/DemoApp.csproj
 
 # NuGet パッケージ生成（artifacts/ に .nupkg + .snupkg が出力される）
@@ -23,7 +26,7 @@ dotnet pack src/VelopackUpdateDialog.Avalonia/VelopackUpdateDialog.Avalonia.cspr
 ```
 
 - **.NET SDK の選択基準は [global.json](global.json) の `10.0.201` で、`latestFeature` ロールフォワードを許可**する。TFM は `net10.0`。
-- **テストプロジェクトは存在しない**。動作確認は DemoApp の目視（`OnShowAvailable` 等のボタンで各 `UpdateState` を再現）で行う。
+- 競合とタスク寿命は回帰テストを実行し、表示・操作は DemoApp の目視（`OnShowAvailable` 等のボタンで各 `UpdateState` を再現）で確認する。
 - `TreatWarningsAsErrors=true` + `EnforceCodeStyleInBuild=true`（[Directory.Build.props](Directory.Build.props)）。**警告・コードスタイル違反はビルドエラーになる**。[.editorconfig](.editorconfig) のスタイル（file-scoped namespace / using は namespace 外 / `var` は型が自明なときのみ / private フィールドは `_camelCase` / 中括弧必須）を守らないと CI が落ちる。
 
 ## 最重要の非自明ポイント
@@ -47,7 +50,7 @@ dotnet pack src/VelopackUpdateDialog.Avalonia/VelopackUpdateDialog.Avalonia.cspr
 
 ## CI / リリース
 
-[.github/workflows/publish.yml](.github/workflows/publish.yml): `release/**` ブランチへの push（または手動 dispatch）で build → pack → `publish.ps1` で NuGet 公開。`release/x.y.z` ブランチは `/vava` が作成する。GitHub Actions は SHA pin、権限は `contents: read` 最小化。`publish.ps1` は artifacts/ に複数バージョンの nupkg が混在すると警告して誤公開を防ぐ。
+[.github/workflows/publish.yml](.github/workflows/publish.yml): `release/**` ブランチへの push（または手動 dispatch）で build → 回帰テスト → pack → `publish.ps1` で NuGet 公開。`release/x.y.z` ブランチは `/vava` が作成する。GitHub Actions は SHA pin、権限は `contents: read` 最小化。`publish.ps1` は artifacts/ に複数バージョンの nupkg が混在すると公開前に異常終了する。
 
 ## ディレクトリ早見
 
@@ -55,6 +58,7 @@ dotnet pack src/VelopackUpdateDialog.Avalonia/VelopackUpdateDialog.Avalonia.cspr
 |---|---|
 | `src/VelopackUpdateDialog.Avalonia/` | ライブラリ本体（`Models/` `ViewModels/` `Controls/` `Windows/` `Themes/` `Util/`） |
 | `samples/DemoApp/` | 各状態を再現する目視確認用 Avalonia アプリ |
+| `tests/VelopackUpdateDialog.Avalonia.RegressionTests/` | ダウンロード・適用・終了順序を決定的に再現する実行型回帰テスト |
 | `DESIGN.md` | 現在の構造、責務、データフロー、不変条件、設計判断の正本 |
 | `Directory.Build.props` | バージョン・パッケージメタデータ・共通ビルド設定の一元管理 |
 | `artifacts/` | `dotnet pack` 出力先 |

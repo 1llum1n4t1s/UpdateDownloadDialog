@@ -78,6 +78,11 @@ public partial class UpdateDialogWindow : Window
         var resolvedOptions = options ?? new UpdateDialogOptions();
         var vm = new UpdateDialogViewModel(manager, resolvedOptions);
 
+        if (manualCheck && cancellationToken.IsCancellationRequested)
+        {
+            return new UpdateDialogResult(UpdateOutcome.Cancelled);
+        }
+
         // 自動チェック時はウィンドウを開かず先にチェック。
         // 「最新」「無視タグ一致」「失敗」のどれかなら何も表示せず戻る。
         if (!manualCheck)
@@ -108,17 +113,66 @@ public partial class UpdateDialogWindow : Window
         }
 
         var window = new UpdateDialogWindow(vm);
+        CancellationTokenSource? checkLifetimeCts = null;
+        Task? manualCheckTask = null;
 
         // 手動チェック時のみ、ウィンドウ表示と並行してチェックを開始する
         if (manualCheck)
         {
-            _ = RunManualCheckAsync(vm, window, cancellationToken);
+            checkLifetimeCts = new CancellationTokenSource();
+            window._checkLifetimeCts = checkLifetimeCts;
         }
 
-        if (owner is not null)
-            await window.ShowDialog(owner).ConfigureAwait(true);
-        else
-            await ShowStandaloneAsync(window).ConfigureAwait(true);
+        try
+        {
+            Task windowTask;
+            if (owner is not null)
+                windowTask = window.ShowDialog(owner);
+            else
+                windowTask = ShowStandaloneAsync(window);
+
+            if (checkLifetimeCts is not null)
+            {
+                manualCheckTask = RunManualCheckAsync(
+                    vm,
+                    window,
+                    cancellationToken,
+                    checkLifetimeCts.Token);
+            }
+
+            await windowTask.ConfigureAwait(true);
+        }
+        finally
+        {
+            // OnClosed でも Dispose されるが、表示処理自体が例外になった経路でも
+            // ダウンロード callback を抑止し、走行中タスクへキャンセルを伝える。
+            vm.Dispose();
+            try
+            {
+                if (checkLifetimeCts is not null)
+                {
+                    try
+                    {
+                        checkLifetimeCts.Cancel();
+                        if (manualCheckTask is not null)
+                        {
+                            await manualCheckTask.ConfigureAwait(true);
+                        }
+                    }
+                    finally
+                    {
+                        window._checkLifetimeCts = null;
+                        checkLifetimeCts.Dispose();
+                    }
+                }
+            }
+            finally
+            {
+                // Window が閉じた後の State / ErrorOccurred 更新と未観測例外を防ぐため、
+                // View のイベントハンドラーだけに所有させず ShowAsync でも完了を待つ。
+                await vm.WaitForDownloadCompletionAsync().ConfigureAwait(true);
+            }
+        }
 
         return new UpdateDialogResult(vm.FinalOutcome, vm.FinalError);
     }
@@ -126,17 +180,27 @@ public partial class UpdateDialogWindow : Window
     // 手動チェックをウィンドウ表示と並行して走らせる。ShowAsync は UI スレッドから呼ばれ、
     // CheckAsync も ConfigureAwait(true) で UI スレッドへ戻るため、ここでの後処理は UI スレッド上で動く。
     private static async Task RunManualCheckAsync(
-        UpdateDialogViewModel vm, UpdateDialogWindow window, CancellationToken cancellationToken)
+        UpdateDialogViewModel vm,
+        UpdateDialogWindow window,
+        CancellationToken cancellationToken,
+        CancellationToken windowLifetimeToken)
     {
         try
         {
-            await vm.CheckAsync(manualCheck: true, cancellationToken).ConfigureAwait(true);
+            await vm.CheckForWindowAsync(cancellationToken, windowLifetimeToken).ConfigureAwait(true);
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
             // キャンセル時は「最新版です」と誤表示せず、ウィンドウを閉じる。
             // FinalOutcome は CheckAsync 内で既に Cancelled に確定済み (表示と戻り値が整合する)。
-            window.Close();
+            if (window.IsVisible)
+            {
+                window.Close();
+            }
+        }
+        catch (OperationCanceledException) when (windowLifetimeToken.IsCancellationRequested)
+        {
+            // ユーザーが先に閉じた場合は Closed を維持する。待機だけを終了し、再度 Close しない。
         }
         catch (Exception ex)
         {
@@ -186,15 +250,24 @@ public partial class UpdateDialogWindow : Window
             return;
         }
 
-        _viewModel.OnClosing();
+        // ダウンロード完了と適用開始の境界を ViewModel の同じ gate で確定する。
+        // 適用開始が先なら再起動処理中の Window close を拒否し、close が先なら
+        // callback を抑止して ApplyUpdatesAndRestart へ進ませない。
+        if (!_viewModel.TryOnClosing())
+        {
+            e.Cancel = true;
+            return;
+        }
+
+        _checkLifetimeCts?.Cancel();
         base.OnClosing(e);
     }
 
     /// <inheritdoc />
     protected override void OnClosed(EventArgs e)
     {
-        // ウィンドウが閉じきった後に ViewModel の CancellationTokenSource を解放する。
-        // この時点で OnClosing 経由でダウンロードはキャンセル済み (AllowCloseDuringDownload=false なら閉じない)。
+        // この時点で OnClosing 経由でダウンロードと手動チェックの待機はキャンセル済み。
+        // ShowAsync がバックグラウンド処理の完了を join する。
         _viewModel.Dispose();
         base.OnClosed(e);
     }
@@ -317,4 +390,5 @@ public partial class UpdateDialogWindow : Window
     }
 
     private readonly UpdateDialogViewModel _viewModel;
+    private CancellationTokenSource? _checkLifetimeCts;
 }

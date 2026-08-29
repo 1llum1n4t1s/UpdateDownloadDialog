@@ -22,7 +22,7 @@ public enum UpdateOutcome
     /// <summary>ユーザーが「このバージョンを無視」を選んだ。</summary>
     Ignored,
 
-    /// <summary>ダウンロード中にユーザーが閉じる/キャンセルした。</summary>
+    /// <summary>呼び出し側が更新確認をキャンセルした、またはダウンロード中にユーザーが閉じる/キャンセルした。</summary>
     Cancelled,
 
     /// <summary>チェック / ダウンロード中にエラーが発生した。<c>Error</c> を参照。</summary>

@@ -25,6 +25,9 @@ jobs:
       - name: Build VelopackUpdateDialog.Avalonia
         run: dotnet build src/VelopackUpdateDialog.Avalonia/VelopackUpdateDialog.Avalonia.csproj -c Release
 
+      - name: Run download lifetime regression tests
+        run: dotnet run --project tests/VelopackUpdateDialog.Avalonia.RegressionTests/VelopackUpdateDialog.Avalonia.RegressionTests.csproj -c Release
+
       - name: Pack VelopackUpdateDialog.Avalonia
         run: dotnet pack src/VelopackUpdateDialog.Avalonia/VelopackUpdateDialog.Avalonia.csproj -c Release --no-build
 

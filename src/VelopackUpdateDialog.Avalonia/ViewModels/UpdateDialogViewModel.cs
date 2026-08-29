@@ -26,7 +26,22 @@ public sealed partial class UpdateDialogViewModel : ObservableObject, IDisposabl
     {
         ArgumentNullException.ThrowIfNull(manager);
         _manager = manager;
+        _applyUpdatesAndRestart = info => manager.ApplyUpdatesAndRestart(info);
+        _postToUi = callback => Dispatcher.UIThread.Post(callback);
         Options = options ?? new UpdateDialogOptions();
+    }
+
+    internal UpdateDialogViewModel(
+        UpdateManager manager,
+        UpdateDialogOptions? options,
+        Action<UpdateInfo> applyUpdatesAndRestart,
+        Action<Action> postToUi)
+        : this(manager, options)
+    {
+        ArgumentNullException.ThrowIfNull(applyUpdatesAndRestart);
+        ArgumentNullException.ThrowIfNull(postToUi);
+        _applyUpdatesAndRestart = applyUpdatesAndRestart;
+        _postToUi = postToUi;
     }
 
     /// <summary>
@@ -161,6 +176,9 @@ public sealed partial class UpdateDialogViewModel : ObservableObject, IDisposabl
     public void SetFailed(Exception ex)
     {
         ArgumentNullException.ThrowIfNull(ex);
+        if (IsDisposed())
+            return;
+
         FinalError = ex;
         ErrorMessage = ex.InnerException?.Message ?? ex.Message;
         State = UpdateState.Failed;
@@ -173,7 +191,21 @@ public sealed partial class UpdateDialogViewModel : ObservableObject, IDisposabl
     /// </summary>
     /// <param name="manualCheck">true ならユーザー主導の手動チェック (最新であってもダイアログを残す)。</param>
     /// <param name="cancellationToken">チェックをキャンセルする際のトークン。</param>
-    public async Task CheckAsync(bool manualCheck = false, CancellationToken cancellationToken = default)
+    public Task CheckAsync(bool manualCheck = false, CancellationToken cancellationToken = default)
+    {
+        return CheckCoreAsync(cancellationToken, CancellationToken.None);
+    }
+
+    internal Task CheckForWindowAsync(
+        CancellationToken cancellationToken,
+        CancellationToken windowLifetimeToken)
+    {
+        return CheckCoreAsync(cancellationToken, windowLifetimeToken);
+    }
+
+    private async Task CheckCoreAsync(
+        CancellationToken cancellationToken,
+        CancellationToken windowLifetimeToken)
     {
         // 再入防止は State ではなく専用フラグで持つ。State に依存させると
         // 「キャンセル後に State を Idle へ戻さないとガードが解けない」制約が生まれ、
@@ -184,6 +216,12 @@ public sealed partial class UpdateDialogViewModel : ObservableObject, IDisposabl
         _checkInFlight = true;
         State = UpdateState.Checking;
 
+        using var linkedCts = windowLifetimeToken.CanBeCanceled
+            ? CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, windowLifetimeToken)
+            : null;
+        var operationToken = linkedCts?.Token ?? cancellationToken;
+        Task<UpdateInfo?>? checkTask = null;
+
         try
         {
             // 開発環境 (未インストール) では「最新」扱いにする
@@ -193,9 +231,10 @@ public sealed partial class UpdateDialogViewModel : ObservableObject, IDisposabl
                 return;
             }
 
-            cancellationToken.ThrowIfCancellationRequested();
-            var info = await _manager.CheckForUpdatesAsync().ConfigureAwait(true);
-            cancellationToken.ThrowIfCancellationRequested();
+            operationToken.ThrowIfCancellationRequested();
+            checkTask = _manager.CheckForUpdatesAsync();
+            var info = await checkTask.WaitAsync(operationToken).ConfigureAwait(true);
+            operationToken.ThrowIfCancellationRequested();
 
             if (info is null)
             {
@@ -205,12 +244,23 @@ public sealed partial class UpdateDialogViewModel : ObservableObject, IDisposabl
 
             SetAvailable(info);
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException) when (operationToken.IsCancellationRequested)
         {
-            FinalOutcome = UpdateOutcome.Cancelled;
-            // State は Checking のまま維持する。ウィンドウ表示中のキャンセル
-            // (外部トークン発火 / HttpClient タイムアウトの TaskCanceledException) で
-            // 状態を巻き戻すと、Window が閉じ切るまでの間だけ空ダイアログが露出するため。
+            if (cancellationToken.IsCancellationRequested)
+            {
+                FinalOutcome = UpdateOutcome.Cancelled;
+            }
+
+            // Velopack 1.2.0 の更新確認 API は CancellationToken を受け取らない。
+            // WaitAsync で呼び出し側の待機だけを終了し、残った通信タスクは例外が
+            // 未観測にならないよう完了まで観測する。キャンセル後の結果は UI へ反映しない。
+            if (checkTask is { IsCompleted: false })
+            {
+                _ = ObserveDetachedCheckAsync(checkTask);
+            }
+
+            // State は Checking のまま維持する。状態を巻き戻すと、Window が
+            // 閉じ切るまでの間だけ空ダイアログが露出するため。
             // 再入ガードは finally の _checkInFlight 解除で解ける。
             throw;
         }
@@ -225,83 +275,180 @@ public sealed partial class UpdateDialogViewModel : ObservableObject, IDisposabl
         }
     }
 
+    private static async Task ObserveDetachedCheckAsync(Task checkTask)
+    {
+        try
+        {
+            await checkTask.ConfigureAwait(false);
+        }
+        catch (Exception)
+        {
+            // 呼び出し側では既にキャンセル済み。遅延完了した例外を観測するだけに留める。
+        }
+    }
+
     /// <summary>
     /// 利用可能な更新をダウンロードし、完了後にアプリを再起動する。
     /// </summary>
     public Task DownloadAndApplyAsync()
     {
-        if (State == UpdateState.Downloading)
-            return Task.CompletedTask;
-
-        // _updateInfo 未設定で Available 状態になっている異常系 (SetAvailable を経ず State を直接代入された等)。
-        // 黙って no-op にするとダウンロードボタンが無反応に見えるため、ログに残して顕在化する。
-        if (_updateInfo is null)
+        lock (_downloadGate)
         {
-            log.InfoFormat("DownloadAndApplyAsync was called without UpdateInfo. Reach Available via CheckAsync()/SetAvailable() first.");
-            return Task.CompletedTask;
+            if (_disposed || _suppressDownloadCallbacks)
+                return Task.CompletedTask;
+
+            if (_downloadTask is { IsCompleted: false })
+                return _downloadTask;
+
+            if (State == UpdateState.Downloading)
+                return Task.CompletedTask;
+
+            // _updateInfo 未設定で Available 状態になっている異常系 (SetAvailable を経ず State を直接代入された等)。
+            // 黙って no-op にするとダウンロードボタンが無反応に見えるため、ログに残して顕在化する。
+            if (_updateInfo is null)
+            {
+                log.InfoFormat("DownloadAndApplyAsync was called without UpdateInfo. Reach Available via CheckAsync()/SetAvailable() first.");
+                return Task.CompletedTask;
+            }
+
+            // 起動準備と Task の公開を close / Dispose と同じ gate 内で完了させる。
+            // CTS の破棄は Velopack が token を使い終えた後のタスク側 finally が担う。
+            var info = _updateInfo;
+            var cts = new CancellationTokenSource();
+            _downloadCts = cts;
+            State = UpdateState.Downloading;
+            DownloadProgress = 0;
+            _downloadTask = Task.Run(() => DownloadAndApplyCoreAsync(info, cts));
+            return _downloadTask;
+        }
+    }
+
+    private async Task DownloadAndApplyCoreAsync(UpdateInfo info, CancellationTokenSource cts)
+    {
+        var token = cts.Token;
+        try
+        {
+            await _manager.DownloadUpdatesAsync(
+                info,
+                p => PostDownloadCallback(() => DownloadProgress = p),
+                cancelToken: token).ConfigureAwait(false);
+
+            BeginApplyOrThrow(token);
+            _applyUpdatesAndRestart(info);
+
+            // ここに到達するのは再起動が走らなかった場合のみ (通常はプロセス終了で未到達)。
+            // Apply が失敗して例外を投げたら下の catch に入るため Updated にはならない。
+            PostDownloadCallback(() => FinalOutcome = UpdateOutcome.Updated);
+        }
+        catch (OperationCanceledException) when (token.IsCancellationRequested)
+        {
+            // ダウンロードのキャンセルは「更新フロー全体のキャンセル」ではなく Available へ戻すだけ。
+            // close / Dispose が先なら callback 自体を抑止する。
+            PostDownloadCallback(() => State = UpdateState.Available);
+        }
+        catch (Exception ex)
+        {
+            PostDownloadCallback(() => SetFailed(ex));
+        }
+        finally
+        {
+            lock (_downloadGate)
+            {
+                _isApplyingUpdate = false;
+                if (ReferenceEquals(_downloadCts, cts))
+                {
+                    _downloadCts = null;
+                }
+
+                cts.Dispose();
+            }
+        }
+    }
+
+    internal Task WaitForDownloadCompletionAsync()
+    {
+        lock (_downloadGate)
+        {
+            return _downloadTask ?? Task.CompletedTask;
+        }
+    }
+
+    internal bool TryOnClosing()
+    {
+        var wasDownloading = false;
+        lock (_downloadGate)
+        {
+            if (_isApplyingUpdate)
+                return false;
+
+            _suppressDownloadCallbacks = true;
+            wasDownloading = State == UpdateState.Downloading;
+            if (wasDownloading)
+            {
+                _downloadCts?.Cancel();
+            }
         }
 
-        // CTS の所有権はこの後起動するダウンロードタスクにあり、破棄も finally で行う。
-        // 走行中の Velopack がまだ token を保持している間に破棄すると ObjectDisposedException を
-        // 誘発しうるため (CTS は関連操作の完了後に破棄するのが公式ガイダンス)、
-        // Dispose() / CancelDownload() 側は Cancel だけに留める。
-        var cts = new CancellationTokenSource();
-        _downloadCts = cts;
-        var token = cts.Token;
-        var info = _updateInfo;
-
-        State = UpdateState.Downloading;
-        DownloadProgress = 0;
-
-        return Task.Run(async () =>
+        if (wasDownloading)
         {
-            try
-            {
-                await _manager.DownloadUpdatesAsync(
-                    info,
-                    p => Dispatcher.UIThread.Post(() => DownloadProgress = p),
-                    cancelToken: token).ConfigureAwait(false);
+            FinalOutcome = UpdateOutcome.Cancelled;
+            return true;
+        }
 
-                _manager.ApplyUpdatesAndRestart(info);
+        if (FinalOutcome == UpdateOutcome.Closed)
+        {
+            FinalOutcome = State switch
+            {
+                UpdateState.UpToDate => UpdateOutcome.UpToDate,
+                UpdateState.Failed => UpdateOutcome.Failed,
+                _ => UpdateOutcome.Closed,
+            };
+        }
 
-                // ここに到達するのは再起動が走らなかった場合のみ (通常はプロセス終了で未到達)。
-                // Apply が失敗して例外を投げたら下の catch に入るため Updated にはならず、
-                // OnClosing で State=Failed から Failed が導出される。
-                // 非 UI スレッドからの直接代入による race を避けるため UI スレッドで確定する。
-                Dispatcher.UIThread.Post(() => FinalOutcome = UpdateOutcome.Updated);
-            }
-            catch (OperationCanceledException)
-            {
-                // ダウンロードのキャンセルは「更新フロー全体のキャンセル」ではなく Available へ戻すだけ。
-                // FinalOutcome はここで確定させず OnClosing に委ねる
-                // (Available のまま普通に閉じれば Closed を正しく返せる)。
-                Dispatcher.UIThread.Post(() => State = UpdateState.Available);
-            }
-            catch (Exception ex)
-            {
-                Dispatcher.UIThread.Post(() => SetFailed(ex));
-            }
-            finally
-            {
-                // 参照落としと破棄を UI スレッドで直列化する。_downloadCts の読み書きは
-                // CancelDownload() / Dispose() も UI スレッドから行うため、これで競合しない。
-                Dispatcher.UIThread.Post(() =>
-                {
-                    if (ReferenceEquals(_downloadCts, cts))
-                    {
-                        _downloadCts = null;
-                    }
+        return true;
+    }
 
-                    cts.Dispose();
-                });
+    private void BeginApplyOrThrow(CancellationToken token)
+    {
+        lock (_downloadGate)
+        {
+            token.ThrowIfCancellationRequested();
+            if (_suppressDownloadCallbacks)
+                throw new OperationCanceledException(token);
+
+            _isApplyingUpdate = true;
+        }
+    }
+
+    private void PostDownloadCallback(Action callback)
+    {
+        _postToUi(() =>
+        {
+            lock (_downloadGate)
+            {
+                if (_disposed || _suppressDownloadCallbacks)
+                    return;
             }
+
+            callback();
         });
+    }
+
+    private bool IsDisposed()
+    {
+        lock (_downloadGate)
+        {
+            return _disposed;
+        }
     }
 
     /// <summary>ダウンロードをキャンセル。</summary>
     public void CancelDownload()
     {
-        _downloadCts?.Cancel();
+        lock (_downloadGate)
+        {
+            _downloadCts?.Cancel();
+        }
     }
 
     /// <summary>
@@ -322,22 +469,7 @@ public sealed partial class UpdateDialogViewModel : ObservableObject, IDisposabl
     /// </summary>
     public void OnClosing()
     {
-        if (State == UpdateState.Downloading)
-        {
-            CancelDownload();
-            FinalOutcome = UpdateOutcome.Cancelled;
-            return;
-        }
-
-        if (FinalOutcome == UpdateOutcome.Closed)
-        {
-            FinalOutcome = State switch
-            {
-                UpdateState.UpToDate => UpdateOutcome.UpToDate,
-                UpdateState.Failed => UpdateOutcome.Failed,
-                _ => UpdateOutcome.Closed,
-            };
-        }
+        _ = TryOnClosing();
     }
 
     /// <summary>
@@ -352,11 +484,23 @@ public sealed partial class UpdateDialogViewModel : ObservableObject, IDisposabl
     /// </summary>
     public void Dispose()
     {
-        CancelDownload();
+        lock (_downloadGate)
+        {
+            _disposed = true;
+            _suppressDownloadCallbacks = true;
+            _downloadCts?.Cancel();
+        }
     }
 
+    private readonly object _downloadGate = new();
     private readonly UpdateManager _manager;
+    private readonly Action<UpdateInfo> _applyUpdatesAndRestart;
+    private readonly Action<Action> _postToUi;
     private UpdateInfo? _updateInfo;
     private bool _checkInFlight;
     private CancellationTokenSource? _downloadCts;
+    private Task? _downloadTask;
+    private bool _isApplyingUpdate;
+    private bool _suppressDownloadCallbacks;
+    private bool _disposed;
 }

@@ -21,11 +21,11 @@ if (-not $packages)
     exit 1
 }
 
-# 異なるバージョンの nupkg が混在していたら警告 (未公開バージョンの意図しない公開を防ぐ)
+# 異なるバージョンの nupkg が混在していたら公開前に中止する
 $versions = $packages | ForEach-Object { if ($_.Name -match '(\d+\.\d+\.\d+(?:-[\w.]+)?)\.nupkg$') { $Matches[1] } } | Select-Object -Unique
 if ($versions.Count -gt 1)
 {
-    Write-Warning "artifacts に複数バージョンの nupkg が混在しています: $($versions -join ', ')。意図しない公開を避けるため不要な nupkg を削除してください。"
+    throw "artifacts に複数バージョンの nupkg が混在しています: $($versions -join ', ')。意図しない公開を避けるため公開を中止しました。不要な nupkg を削除してください。"
 }
 
 $failed = 0
