@@ -21,8 +21,8 @@ dotnet run --project samples/DemoApp/DemoApp.csproj
 # NuGet パッケージ生成（artifacts/ に .nupkg + .snupkg が出力される）
 dotnet pack src/VelopackUpdateDialog.Avalonia/VelopackUpdateDialog.Avalonia.csproj -c Release
 
-# NuGet へ公開（NUGET_API_KEY 環境変数が必須。artifacts/ 内の全 nupkg を push）
-./publish.ps1
+# NuGet へ公開（release/** ブランチから Trusted Publishing workflow を実行）
+gh workflow run publish.yml --ref release/x.y.z
 ```
 
 - **.NET SDK の選択基準は [global.json](global.json) の `10.0.201` で、`latestFeature` ロールフォワードを許可**する。TFM は `net10.0`。
@@ -50,7 +50,7 @@ dotnet pack src/VelopackUpdateDialog.Avalonia/VelopackUpdateDialog.Avalonia.cspr
 
 ## CI / リリース
 
-[.github/workflows/publish.yml](.github/workflows/publish.yml): `release/**` ブランチへの push（または手動 dispatch）で build → 回帰テスト → pack → `publish.ps1` で NuGet 公開。`release/x.y.z` ブランチは `/vava` が作成する。GitHub Actions は SHA pin、権限は `contents: read` 最小化。`publish.ps1` は artifacts/ に複数バージョンの nupkg が混在すると公開前に異常終了する。
+[.github/workflows/publish.yml](.github/workflows/publish.yml): `release/**` ブランチへの push（または手動 dispatch）で build → 回帰テスト → pack → NuGet.org Trusted Publishing で公開。`release/x.y.z` ブランチは `/vava` が作成する。GitHub Actions は SHA pin、権限は `contents: read` と `id-token: write` に限定し、長期 API キーは保存しない。workflow は pack 結果が対象パッケージ1件だけであることを公開前に検証する。
 
 ## ディレクトリ早見
 

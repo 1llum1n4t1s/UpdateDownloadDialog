@@ -99,4 +99,4 @@ Downloading -> 適用・再起動 | Available（キャンセル） | Failed
 
 `VelopackUpdateDialog.Avalonia.slnx` は配布ライブラリ、DemoApp、実行型回帰テストから成る。回帰テストでダウンロード・適用・終了の競合を確認し、Release build と pack に加え、DemoApp で各状態を目視確認する。
 
-パッケージメタデータと製品バージョンは `Directory.Build.props` に集約され、pack 出力は `artifacts/` に置かれる。`release/**` ブランチへの push または手動実行で GitHub Actions が build、回帰テスト、pack、`publish.ps1` による NuGet 公開を行う。公開スクリプトは `artifacts/` に複数バージョンが混在した場合、どのパッケージも送信せず異常終了する。
+パッケージメタデータと製品バージョンは `Directory.Build.props` に集約され、pack 出力は `artifacts/` に置かれる。`release/**` ブランチへの push または手動実行で GitHub Actions が build、回帰テスト、pack を行い、NuGet.org Trusted Publishing で取得した短期資格情報だけを使って公開する。workflow は `artifacts/` の対象パッケージが1件でない場合、どのパッケージも送信せず異常終了する。
