@@ -19,7 +19,7 @@
     <PackageReference Include="Avalonia" Version="12.1.1" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
     <PackageReference Include="Velopack" Version="1.2.0" />
-    <PackageReference Include="SuperLightLogger" Version="1.0.15" />
+    <PackageReference Include="SuperLightLogger" Version="1.0.16" />
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.400" PrivateAssets="all" />
   </ItemGroup>
 </Project>
