@@ -40,6 +40,8 @@ gh workflow run publish.yml --ref release/x.y.z
 ### バージョン番号は触らない
 `<Version>` は [Directory.Build.props](Directory.Build.props) で一元管理。コード修正のついでに勝手に上げない。バージョン更新が必要なら `/vava` ワークフローを提案する（グローバル AGENTS.md の方針）。
 
+`VelopackUpdateDialog.Avalonia` の直接参照元、更新対象ファイル、復元条件、検証コマンドは、リポジトリ直下の `vava.config.json` を正本とする。直接参照元を追加・削除したときは、同じ変更内で `consumerUpdates.targets` を同期する。
+
 ## 設計変更時の規約
 
 実装着手前に [DESIGN.md](DESIGN.md) の該当節を読み、責務の境界と不変条件を維持する。公開レイヤー、状態遷移、自動・手動チェック、スレッド・キャンセル所有権、Window 外観、ホストとのイベント境界を変更した場合は、実装と同じ変更内で DESIGN.md を現在形へ更新する。
