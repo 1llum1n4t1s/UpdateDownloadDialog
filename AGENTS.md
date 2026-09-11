@@ -27,7 +27,7 @@ gh workflow run publish.yml --ref release/x.y.z
 
 - **.NET SDK の選択基準は [global.json](global.json) の `10.0.401` で、`latestFeature` ロールフォワードを許可**する。TFM は `net10.0`。
 - 競合とタスク寿命は回帰テストを実行し、表示・操作は DemoApp の目視（`OnShowAvailable` 等のボタンで各 `UpdateState` を再現）で確認する。
-- `TreatWarningsAsErrors=true` + `EnforceCodeStyleInBuild=true`（[Directory.Build.props](Directory.Build.props)）。**警告・コードスタイル違反はビルドエラーになる**。[.editorconfig](.editorconfig) のスタイル（file-scoped namespace / using は namespace 外 / `var` は型が自明なときのみ / private フィールドは `_camelCase` / 中括弧必須）を守らないと CI が落ちる。
+- `TreatWarningsAsErrors=true` + `EnforceCodeStyleInBuild=true`（[Directory.Build.props](Directory.Build.props)）のため、警告とエラーレベルのコードスタイル違反はビルドを失敗させる。[.editorconfig](.editorconfig) のスタイル（file-scoped namespace / using は namespace 外 / `var` は型が自明なときのみ / private フィールドは `_camelCase` / 中括弧必須）に従う。
 
 ## 最重要の非自明ポイント
 
@@ -53,6 +53,8 @@ gh workflow run publish.yml --ref release/x.y.z
 ## CI / リリース
 
 [.github/workflows/publish.yml](.github/workflows/publish.yml): `release/**` ブランチへの push（または手動 dispatch）で build → 回帰テスト → pack → NuGet.org Trusted Publishing で公開。`release/x.y.z` ブランチは `/vava` が作成する。GitHub Actions は SHA pin、権限は `contents: read` と `id-token: write` に限定し、長期 API キーは保存しない。workflow は pack 結果が対象パッケージ1件だけであることを公開前に検証する。
+
+[.github/dependabot.yml](.github/dependabot.yml) は GitHub Actions、`global.json` の .NET SDK、全3プロジェクトの NuGet 依存を監視する。プロジェクトの追加・移動時は監視ディレクトリも同時に更新し、Avalonia 系はライブラリと DemoApp で同一バージョンを保つ。
 
 ## ディレクトリ早見
 

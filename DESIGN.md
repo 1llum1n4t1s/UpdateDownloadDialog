@@ -14,7 +14,7 @@
 |---|---|---|
 | `UpdateDialogWindow` | `ShowAsync` の入口、自動・手動チェック時の表示判断、Window 設定、閉じる処理、最終結果の返却 | 更新ロジックは `UpdateDialogViewModel`、本文 UI は `UpdateDialogView` に委譲する |
 | `UpdateDialogView` | 状態別 XAML、ダウンロード・無視・閉じる操作、`CloseRequested` の通知 | Window を直接所有せず、`DataContext` の ViewModel とイベントだけを使う |
-| `UpdateDialogViewModel` | `UpdateState` 状態機械、Velopack 呼び出し、進捗、エラー、`UpdateOutcome` の確定 | Window の生成・表示とホスト固有の永続化を行わない |
+| `UpdateDialogViewModel` | `UpdateState` 状態機械、Velopack 呼び出し、進捗、エラー、`UpdateOutcome` の確定 | Window の生成・表示とホスト固有の永続化を行わない。手動・自動による表示差は Window 側が担い、更新確認の状態遷移自体は同じ |
 | `UpdateDialogOptions` / `IUpdateDialogStrings` | 配色、文字列、Window 外観、無視・エラー通知などの公開カスタマイズ契約 | 永続化先やログ送信先は持たず、イベントでホストへ返す |
 | `Models/` | 状態、結果、Window モード、内部既定値の型定義 | UI と Velopack の処理を持たない |
 | `Themes/` / `AcrylicFallbackHelper` | 共通スタイルと Custom chrome の背景切替 | System chrome ではソリッド背景を使い、RDP・透明効果無効・acrylic 非許可時も不透明背景へフォールバックする |
@@ -40,7 +40,7 @@
 ### 自動チェック
 
 1. ホストが `ShowAsync(..., manualCheck: false)` を呼ぶ。
-2. Window を生成する前に `CheckAsync` を完了させる。呼び出し元トークンのキャンセルは `WaitAsync` で待機へ即時反映する。
+2. Window を生成する前に `CheckAsync` を完了させる。インストール済みアプリで更新確認を開始した後は、呼び出し元トークンのキャンセルを `WaitAsync` で待機へ即時反映する。
 3. 最新版の抑止、無視タグ一致、失敗では Window を表示せず、それぞれ `UpToDate`、`Ignored`、`Failed` を返す。
 4. 表示が必要な更新だけ Window を生成して `Available` 状態を提示する。
 
@@ -71,11 +71,11 @@ Downloading -> 適用・再起動 | Available（キャンセル） | Failed
 - Window → View → ViewModel の依存方向を保ち、更新ロジックは ViewModel に集約する。
 - すべての `UpdateState` は表示可能なパネルへ対応させる。派生表示プロパティを増やした場合は `OnStateChanged` から変更通知する。
 - 更新確認の再入防止は `_checkInFlight` で行う。呼び出し元トークンによる確認キャンセル時は `FinalOutcome` を `Cancelled` にし、Window が閉じるまで `Checking` 表示を維持する。
-- バックグラウンド処理から `DownloadProgress`、`State`、`FinalOutcome` を更新するときは UI スレッドへ戻す。ダウンロード CTS とタスクの参照は同期 gate 内だけで更新する。
+- Window / View からの ViewModel 呼び出し、および ViewModel 直接利用時の公開状態変更 API は UI スレッドから呼ぶ。内部のバックグラウンド処理から `DownloadProgress`、`State`、`FinalOutcome` を更新するときは UI スレッドへ戻す。ダウンロード CTS とタスクの参照は同期 gate 内だけで更新する。
 - `CancelDownload` と `Dispose` は走行中 CTS のキャンセルだけを行い、破棄はダウンロードタスク側の `finally` に任せる。
 - ダウンロード完了後の適用開始と Window close は同じ同期 gate で順序を確定する。close が先なら適用せず、適用開始が先なら close を拒否する。
 - Window close または ViewModel の破棄後は、ダウンロード由来の進捗、状態、結果、`ErrorOccurred` を更新しない。`ShowAsync` は所有するダウンロードタスクを完了まで待つ。
-- 更新確認の呼び出し元キャンセルは `Cancelled`、確認中の Window をユーザーが閉じた場合は `Closed` とする。Window を閉じる際は寿命トークンで待機を終了し、追跡タスクの完了後に結果を返すため、閉じた後に状態や `ErrorOccurred` を更新しない。
+- インストール済みアプリでの更新確認の呼び出し元キャンセルは `Cancelled`、確認中の Window をユーザーが閉じた場合は `Closed` とする。`UpdateManager.IsInstalled == false` の開発実行では、通信もトークン確認も行わず `UpToDate` とする。Window を閉じる際は寿命トークンで待機を終了し、追跡タスクの完了後に結果を返すため、閉じた後に状態や `ErrorOccurred` を更新しない。
 - Velopack 1.2.0 の `CheckForUpdatesAsync` は `CancellationToken` を受け取らないため、キャンセルできるのは待機だけであり、内部通信は完了まで継続し得る。切り離されたタスクは例外が未観測にならないよう完了まで観測し、結果を状態へ反映しない。
 - 更新確認またはダウンロードの `OperationCanceledException` は、対応する呼び出し元トークンが要求済みの場合だけキャンセルとして扱う。HTTP タイムアウトなどトークン由来でない失敗は `Failed` とする。
 - 自動チェックの失敗は Window を表示せず、`ErrorOccurred` と `UpdateDialogResult.Error` から観測可能にする。`SetFailed` による同一失敗のイベント通知は 1 回に保つ。
@@ -97,6 +97,6 @@ Downloading -> 適用・再起動 | Available（キャンセル） | Failed
 
 ## ビルド・検証・配布の境界
 
-`VelopackUpdateDialog.Avalonia.slnx` は配布ライブラリ、DemoApp、実行型回帰テストから成る。回帰テストでダウンロード・適用・終了の競合を確認し、Release build と pack に加え、DemoApp で各状態を目視確認する。
+`VelopackUpdateDialog.Avalonia.slnx` は配布ライブラリ、DemoApp、実行型回帰テストから成る。ローカル検証ではソリューション全体を Release build し、回帰テストでダウンロード・適用・終了の競合を確認し、DemoApp で各状態を目視確認する。
 
-パッケージメタデータと製品バージョンは `Directory.Build.props` に集約され、pack 出力は `artifacts/` に置かれる。`release/**` ブランチへの push または手動実行で GitHub Actions が build、回帰テスト、pack を行い、NuGet.org Trusted Publishing で取得した短期資格情報だけを使って公開する。workflow は `artifacts/` の対象パッケージが1件でない場合、どのパッケージも送信せず異常終了する。
+パッケージメタデータと製品バージョンは `Directory.Build.props` に集約され、pack 出力は `artifacts/` に置かれる。`release/**` ブランチへの push または手動実行で GitHub Actions が配布ライブラリの build、回帰テスト、pack を行い、NuGet.org Trusted Publishing で取得した短期資格情報だけを使って公開する。CI は DemoApp の build と目視確認を行わない。workflow は `artifacts/` の対象パッケージが1件でない場合、どのパッケージも送信せず異常終了する。
