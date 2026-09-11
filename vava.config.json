@@ -30,6 +30,7 @@
         "allowedPaths": [
           "src/Fumilume/Fumilume.csproj",
           "src/Fumilume/packages.lock.json",
+          "tests/Fumilume.Tests/Fumilume.Tests.csproj",
           "tests/Fumilume.Tests/packages.lock.json"
         ],
         "verify": [
@@ -195,7 +196,8 @@
         "update": "pwsh -NoProfile -File ../UpdateDownloadDialog/scripts/update-nuget-consumer.ps1 -PackageId VelopackUpdateDialog.Avalonia -ProjectPaths 'src/VStoVSC/VStoVSC.csproj' -OldVersion {{OLD_VERSION}} -Version {{NEW_VERSION}} && dotnet restore VStoVSC.slnx --force-evaluate --source https://api.nuget.org/v3/index.json --no-http-cache -p:Platform=x64",
         "allowedPaths": [
           "src/VStoVSC/VStoVSC.csproj",
-          "src/VStoVSC/packages.lock.json"
+          "src/VStoVSC/packages.lock.json",
+          "tests/VStoVSC.Tests/packages.lock.json"
         ],
         "verify": [
           "dotnet restore VStoVSC.slnx --locked-mode --source https://api.nuget.org/v3/index.json --no-http-cache -p:Platform=x64",
@@ -206,4 +208,3 @@
     ]
   }
 }
-
