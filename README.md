@@ -10,7 +10,7 @@ Avalonia 12 で動く **Velopack 自動更新ダイアログ** の再利用可�
 dotnet add package VelopackUpdateDialog.Avalonia
 ```
 
-依存: `Avalonia 12.1.1+`, `CommunityToolkit.Mvvm 8.4.2+`, `Velopack 1.2.0+`, TFM `net10.0`。
+依存: `Avalonia 12.1.2+`, `CommunityToolkit.Mvvm 8.4.2+`, `Velopack 1.2.0+`, `SuperLightLogger 1.0.16+`, TFM `net10.0`。
 
 > 📦 **PackageId と namespace について**: NuGet パッケージ名は `VelopackUpdateDialog.Avalonia` ですが、C# namespace は `VelopackUpdateDialog`（`.Avalonia` 接尾辞なし）です。将来の WPF/WinForms 派生パッケージとの namespace 共有を見越した設計です。
 
@@ -22,12 +22,17 @@ using Velopack.Sources;
 using VelopackUpdateDialog;
 
 var mgr = new UpdateManager(new GithubSource("https://github.com/owner/repo", string.Empty, false));
-await UpdateDialogWindow.ShowAsync(parentWindow, mgr);
+await UpdateDialogWindow.ShowAsync(parentWindow, mgr, manualCheck: true);
 ```
+
+起動時にサイレントに自動確認する場合は `manualCheck: false`（既定値）を使う。最新版、無視対象、確認失敗では Window を表示せず結果だけを返す。
 
 ## オプション指定
 
 ```csharp
+using Avalonia;
+using Avalonia.Media;
+
 // 例: MyJapaneseStrings は IUpdateDialogStrings を実装するユーザー定義クラス。
 //     最小実装は samples/DemoApp/MainWindow.axaml.cs の JapaneseStrings を参照。
 
@@ -43,6 +48,7 @@ var options = new UpdateDialogOptions
     // ResizeMode = WindowResizeMode.Resizable,
     // InitialSize = new Size(600, 240),
     // MinSize = new Size(400, 160),
+    // MaxSize = new Size(900, 600), // null なら上限なし
 
     ChromeMode = WindowChromeMode.Custom,  // OS フレームを使うなら System
     AccentBrush = Brushes.DodgerBlue,
@@ -83,22 +89,27 @@ switch (result.Outcome)
 
 ```xml
 <Window xmlns:upd="using:VelopackUpdateDialog">
-    <upd:UpdateDialogView DataContext="{Binding UpdateVm}"/>
+    <upd:UpdateDialogView x:Name="UpdateView"/>
 </Window>
 ```
 
 ```csharp
 var vm = new UpdateDialogViewModel(updateManager, options);
-MyWindow.DataContext = vm;
-await vm.CheckAsync(manualCheck: true);
+UpdateView.DataContext = vm;
+UpdateView.CloseRequested += (_, _) => Close();
+Closed += (_, _) => vm.Dispose();
+await vm.CheckAsync();
 ```
+
+`UpdateDialogView` は Window を所有せず、無視・閉じる操作で `CloseRequested` を通知する。任意 Window へ埋め込む場合は、ホストがこの通知、Window の閉じる方針、ViewModel の `Dispose` を所有する。
 
 ### 3. `UpdateDialogViewModel` — 完全自前 UI
 
 状態機械と Velopack 呼び出しロジックだけを再利用し、UI は完全自前で組む場合。
 
 ```csharp
-var vm = new UpdateDialogViewModel(updateManager);
+using var vm = new UpdateDialogViewModel(updateManager);
+// GitHub.com なら new UpdateDialogViewModel("https://github.com/owner/repo") も利用可。
 vm.PropertyChanged += (_, e) =>
 {
     if (e.PropertyName == nameof(vm.State))
@@ -106,8 +117,10 @@ vm.PropertyChanged += (_, e) =>
         // 自前の UI を更新
     }
 };
-await vm.CheckAsync(manualCheck: true);
+await vm.CheckAsync();
 ```
+
+`manualCheck` による Window 表示の切り替えは `UpdateDialogWindow.ShowAsync` が担当する。ViewModel を直接使う場合は、ホストが表示と寿命を管理する。
 
 ## カスタマイズ拡張点
 
@@ -123,6 +136,7 @@ await vm.CheckAsync(manualCheck: true);
 
 | 状態 | 表示 |
 |---|---|
+| `Idle` | 初期状態。空表示を避けるため `Checking` と同じスピナーを表示 |
 | `Checking` | 不定進捗バー + "Checking for updates..." |
 | `Available` | バージョン バッジ + 「ダウンロードしてインストール」/「このバージョンを無視」 |
 | `Downloading` | 進捗バー (0-100) |
@@ -144,7 +158,7 @@ await vm.CheckAsync(manualCheck: true);
 
 ## 事前条件
 
-- ホストアプリは **Velopack でパッケージ化** (`vpk pack`) されている必要がある。`UpdateManager.IsInstalled` が `false` の場合 (= `vpk pack` を経ていない開発実行など)、本ライブラリは常に `UpdateOutcome.UpToDate` を返す
+- ホストアプリは **Velopack でパッケージ化** (`vpk pack`) されている必要がある。`UpdateManager.IsInstalled` が `false` の場合 (= `vpk pack` を経ていない開発実行など)、通常の更新確認は最新版として扱う（`ShowAsync` は `UpdateOutcome.UpToDate`、ViewModel 直接利用では `State = UpdateState.UpToDate`）
 - ホストアプリの `Program.Main` 冒頭で `VelopackApp.Build().Run()` を呼ぶこと (Velopack 公式の事前要件)
 - TFM `net10.0` 以上
 
