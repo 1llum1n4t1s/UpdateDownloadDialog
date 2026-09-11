@@ -25,7 +25,7 @@ dotnet pack src/VelopackUpdateDialog.Avalonia/VelopackUpdateDialog.Avalonia.cspr
 gh workflow run publish.yml --ref release/x.y.z
 ```
 
-- **.NET SDK の選択基準は [global.json](global.json) の `10.0.201` で、`latestFeature` ロールフォワードを許可**する。TFM は `net10.0`。
+- **.NET SDK の選択基準は [global.json](global.json) の `10.0.401` で、`latestFeature` ロールフォワードを許可**する。TFM は `net10.0`。
 - 競合とタスク寿命は回帰テストを実行し、表示・操作は DemoApp の目視（`OnShowAvailable` 等のボタンで各 `UpdateState` を再現）で確認する。
 - `TreatWarningsAsErrors=true` + `EnforceCodeStyleInBuild=true`（[Directory.Build.props](Directory.Build.props)）。**警告・コードスタイル違反はビルドエラーになる**。[.editorconfig](.editorconfig) のスタイル（file-scoped namespace / using は namespace 外 / `var` は型が自明なときのみ / private フィールドは `_camelCase` / 中括弧必須）を守らないと CI が落ちる。
 

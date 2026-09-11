@@ -13,12 +13,25 @@ updates:
         patterns: ["*"]
         update-types: ["minor", "patch"]
 
-  # ライブラリ本体と DemoApp の両方を監視する。
+  - package-ecosystem: "dotnet-sdk"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Tokyo"
+    groups:
+      dotnet-sdk-minor-patch:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+
+  # ライブラリ本体、DemoApp、回帰テストの全プロジェクトを監視する。
   # DemoApp が監視外だと Avalonia.Desktop / Themes.Fluent / Fonts.Inter が取り残される。
   - package-ecosystem: "nuget"
     directories:
       - "/src/VelopackUpdateDialog.Avalonia"
       - "/samples/DemoApp"
+      - "/tests/VelopackUpdateDialog.Avalonia.RegressionTests"
     schedule:
       interval: "weekly"
       day: "monday"
