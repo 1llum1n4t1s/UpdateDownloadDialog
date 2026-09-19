@@ -13,9 +13,9 @@
 | コンポーネント | 責務 | 境界 |
 |---|---|---|
 | `UpdateDialogWindow` | `ShowAsync` の入口、自動・手動チェック時の表示判断、Window 設定、閉じる処理、最終結果の返却 | 更新ロジックは `UpdateDialogViewModel`、本文 UI は `UpdateDialogView` に委譲する |
-| `UpdateDialogView` | 状態別 XAML、ダウンロード・無視・閉じる操作、`CloseRequested` の通知 | Window を直接所有せず、`DataContext` の ViewModel とイベントだけを使う |
+| `UpdateDialogView` | 状態別 XAML、ダウンロード・無視・閉じる操作、`CloseRequested` の通知 | Window を直接所有しない。ホストが `TryOnClosing` で close を確定し、`WaitForDownloadCompletionAsync` で処理完了を待つ |
 | `UpdateDialogViewModel` | `UpdateState` 状態機械、Velopack 呼び出し、進捗、エラー、`UpdateOutcome` の確定 | Window の生成・表示とホスト固有の永続化を行わない。手動・自動による表示差は Window 側が担い、更新確認の状態遷移自体は同じ |
-| `UpdateDialogOptions` / `IUpdateDialogStrings` | 配色、文字列、Window 外観、無視・エラー通知などの公開カスタマイズ契約 | 永続化先やログ送信先は持たず、イベントでホストへ返す |
+| `UpdateDialogOptions` / `IUpdateDialogStrings` | 配色、文字列、Window 外観、無視・エラー・ログ通知などの公開カスタマイズ契約 | 永続化先やログ送信先は持たず、イベントでホストへ返す |
 | `Models/` | 状態、結果、Window モード、内部既定値の型定義 | UI と Velopack の処理を持たない |
 | `Themes/` / `AcrylicFallbackHelper` | 共通スタイルと Custom chrome の背景切替 | System chrome ではソリッド背景を使い、RDP・透明効果無効・acrylic 非許可時も不透明背景へフォールバックする |
 | `samples/DemoApp` | 各状態、テーマ、Window モード、文字列差し替えの目視確認 | 配布パッケージには含まれない |
@@ -25,7 +25,7 @@
 
 - Velopack の `UpdateManager` が更新情報、ダウンロード、適用と再起動を担う。
 - CommunityToolkit.Mvvm が状態通知を生成し、Avalonia の compiled binding が XAML へ反映する。
-- SuperLightLogger は状態遷移と失敗を `Microsoft.Extensions.Logging` 抽象へ流す。ホストは `ErrorOccurred` と `UpdateDialogResult` でも失敗を観測できる。
+- ライブラリ自身はログを出力せず、特定のロガー実装にも依存しない。状態遷移、警告、失敗は `LogEmitted` から構造化した項目としてホストへ返し、失敗は `ErrorOccurred` と `UpdateDialogResult` からも観測できる。
 
 ## データフロー
 
@@ -71,17 +71,22 @@ Downloading -> 適用・再起動 | Available（キャンセル） | Failed
 - Window → View → ViewModel の依存方向を保ち、更新ロジックは ViewModel に集約する。
 - すべての `UpdateState` は表示可能なパネルへ対応させる。派生表示プロパティを増やした場合は `OnStateChanged` から変更通知する。
 - 更新確認の再入防止は `_checkInFlight` で行う。呼び出し元トークンによる確認キャンセル時は `FinalOutcome` を `Cancelled` にし、Window が閉じるまで `Checking` 表示を維持する。
-- Window / View からの ViewModel 呼び出し、および ViewModel 直接利用時の公開状態変更 API は UI スレッドから呼ぶ。内部のバックグラウンド処理から `DownloadProgress`、`State`、`FinalOutcome` を更新するときは UI スレッドへ戻す。ダウンロード CTS とタスクの参照は同期 gate 内だけで更新する。
+- 公開 ViewModel の再利用時は、新しい確認・ダウンロードの開始時と `Available` / `UpToDate` の確定時に、過去の `FinalOutcome` / `FinalError` / `ErrorMessage` をリセットする。現在の close 結果と進行中判定へ過去操作の終端情報を持ち越さない。
+- ダウンロード由来の Dispatcher callback は操作世代 ID を持つ。新しい確認・`Available` / `UpToDate`・ダウンロードへ進んだ時点で世代を更新し、遅延した旧世代の進捗・成功・失敗を反映しない。
+- Window / View からの ViewModel 呼び出し、および ViewModel 直接利用時の公開状態変更 API は UI スレッドから呼ぶ。内部のバックグラウンド処理から UI に bind される `DownloadProgress`、`State`、`ErrorMessage` を更新するときは UI スレッドへ戻す。close と競合する `FinalOutcome` / `FinalError`、ダウンロード CTS、タスク参照は同期 gate 内で先に確定する。
 - `CancelDownload` と `Dispose` は走行中 CTS のキャンセルだけを行い、破棄はダウンロードタスク側の `finally` に任せる。
 - ダウンロード完了後の適用開始と Window close は同じ同期 gate で順序を確定する。close が先なら適用せず、適用開始が先なら close を拒否する。
-- Window close または ViewModel の破棄後は、ダウンロード由来の進捗、状態、結果、`ErrorOccurred` を更新しない。`ShowAsync` は所有するダウンロードタスクを完了まで待つ。
+- 適用成功・失敗の最終結果は UI callback より先に同期 gate 内で確定する。Dispatcher の反映が遅延しても close は終端結果を `Cancelled` へ上書きせず、適用処理が戻った場合は `UpToDate` へ遷移して `Downloading` 表示を残さない。
+- Window close または ViewModel の破棄後は、更新確認・ダウンロード由来の進捗、状態、結果、`ErrorOccurred`、`LogEmitted` を更新・通知しない。状態反映と寿命判定は同じ同期 gate 内で行い、`ShowAsync` は所有するバックグラウンド処理を完了まで待つ。
 - インストール済みアプリでの更新確認の呼び出し元キャンセルは `Cancelled`、確認中の Window をユーザーが閉じた場合は `Closed` とする。`UpdateManager.IsInstalled == false` の開発実行では、通信もトークン確認も行わず `UpToDate` とする。Window を閉じる際は寿命トークンで待機を終了し、追跡タスクの完了後に結果を返すため、閉じた後に状態や `ErrorOccurred` を更新しない。
 - Velopack 1.2.0 の `CheckForUpdatesAsync` は `CancellationToken` を受け取らないため、キャンセルできるのは待機だけであり、内部通信は完了まで継続し得る。切り離されたタスクは例外が未観測にならないよう完了まで観測し、結果を状態へ反映しない。
 - 更新確認またはダウンロードの `OperationCanceledException` は、対応する呼び出し元トークンが要求済みの場合だけキャンセルとして扱う。HTTP タイムアウトなどトークン由来でない失敗は `Failed` とする。
-- 自動チェックの失敗は Window を表示せず、`ErrorOccurred` と `UpdateDialogResult.Error` から観測可能にする。`SetFailed` による同一失敗のイベント通知は 1 回に保つ。
+- 自動チェックの失敗は Window を表示せず、`LogEmitted`、`ErrorOccurred`、`UpdateDialogResult.Error` から観測可能にする。`SetFailed` による同一失敗のイベント通知は各経路 1 回に保つ。
+- `LogEmitted` は状態変更などを行ったスレッドで同期通知する。購読ハンドラが失敗しても更新フローと他の購読者を止めず、ライブラリ側から代替出力もしない。
 - `UpdateManager.IsInstalled == false` の開発実行は最新版として扱う。
 - URL から `UpdateManager` を作る便利コンストラクタは絶対 HTTPS URL かつ `github.com` に限定する。その他の更新元は、ホストが構成した `UpdateManager` を注入する。
 - Custom chrome は acrylic と不透明背景の両方を持ち、実行環境に応じて一方だけを表示する。System chrome は OS フレームとソリッド背景を使う。
+- Resizable の既定幅と推奨最小幅は、500px のダウンロード進捗バーと左右余白を収める 540px とする。
 
 ## 採用済みの設計判断
 

@@ -8,6 +8,8 @@ namespace VelopackUpdateDialog;
 /// 更新ダイアログの中身を担う <see cref="UserControl"/>。
 /// 単独で利用する場合: <c>UpdateDialogView</c> を任意のウィンドウに貼り付け、
 /// <c>DataContext</c> に <see cref="UpdateDialogViewModel"/> をセットする。
+/// ホスト Window は Closing で <see cref="UpdateDialogViewModel.TryOnClosing"/> を呼び、
+/// 終了後に <see cref="UpdateDialogViewModel.WaitForDownloadCompletionAsync"/> を待つ。
 /// </summary>
 public partial class UpdateDialogView : UserControl
 {

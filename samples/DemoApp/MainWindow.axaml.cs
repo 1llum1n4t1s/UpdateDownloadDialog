@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
 using Avalonia;
@@ -28,6 +29,10 @@ public partial class MainWindow : Window
 
     private static UpdateDialogViewModel CreateVm(UpdateDialogOptions? options = null)
     {
+        options ??= new UpdateDialogOptions();
+        options.LogEmitted += entry => Trace.WriteLine(
+            $"[VelopackUpdateDialog] {entry.Level}: {entry.Message} {entry.Exception}");
+
         // SimpleFileSource は実際には更新を見つけないので、UpdateManager は薄いラッパー。
         // 状態は手動で書き換えてダイアログを表示する。
         var dir = new DirectoryInfo(Path.GetTempPath());
@@ -129,7 +134,7 @@ public partial class MainWindow : Window
             ResizeMode = WindowResizeMode.Resizable,
             ChromeMode = WindowChromeMode.System,
             InitialSize = new Size(600, 240),
-            MinSize = new Size(400, 160),
+            MinSize = new Size(540, 160),
         };
         ShowWithState(UpdateState.Available, vm => vm.AvailableTagName = "v2.0.0", options);
     }

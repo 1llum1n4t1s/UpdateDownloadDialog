@@ -107,8 +107,8 @@
         </Border>
       </StackPanel>
 
-      <!-- この Width=500 と Grid の Margin=16 は UpdateDialogDefaults.MacFixedMinWidth (540) の
-           算出根拠になっている。変更するときは両方を合わせて直すこと (macOS の横クリップ再発を防ぐため)。 -->
+      <!-- この Width=500 と Grid の Margin=16 は UpdateDialogDefaults.ContentMinWidth (540) の
+           算出根拠になっている。変更するときは両方を合わせて直すこと。 -->
       <ProgressBar Minimum="0" Maximum="100"
                    Value="{Binding DownloadProgress}"
                    Height="8" Margin="0,8,0,0" Width="500"/>

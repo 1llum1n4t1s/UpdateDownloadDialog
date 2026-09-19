@@ -242,15 +242,8 @@ public partial class UpdateDialogWindow : Window
     /// <inheritdoc />
     protected override void OnClosing(WindowClosingEventArgs e)
     {
-        // ダウンロード中はキャンセル不可オプション
-        if (!_viewModel.Options.AllowCloseDuringDownload
-            && _viewModel.State == UpdateState.Downloading)
-        {
-            e.Cancel = true;
-            return;
-        }
-
         // ダウンロード完了と適用開始の境界を ViewModel の同じ gate で確定する。
+        // AllowCloseDuringDownload も ViewModel 側で同じ状態と一緒に判定する。
         // 適用開始が先なら再起動処理中の Window close を拒否し、close が先なら
         // callback を抑止して ApplyUpdatesAndRestart へ進ませない。
         if (!_viewModel.TryOnClosing())
@@ -316,7 +309,7 @@ public partial class UpdateDialogWindow : Window
                     // 横クリップを間欠的に起こす。最小幅の床を入れると、狭く出た値も
                     // この床まで持ち上がって全状態が同一幅に揃い、遷移時の再サイズ
                     // (= レースの発火点) が消える。高さは従来どおりコンテンツに追従させる。
-                    MinWidth = UpdateDialogDefaults.MacFixedMinWidth;
+                    MinWidth = UpdateDialogDefaults.ContentMinWidth;
                 }
                 break;
 
