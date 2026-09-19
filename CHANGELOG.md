@@ -4,6 +4,13 @@ Git のバージョン記録・コミット差分と既存の変更履歴をも�
 
 ## 未リリース
 
+## [1.0.19] — Git 記録日: 2026-09-19
+
+- SuperLightLogger への依存とライブラリ独自のログ出力を廃止し、ログ項目を `UpdateDialogOptions.LogEmitted` からホストへ通知するよう変更。
+- ViewModel の破棄後に遅延した更新確認・ダウンロード callback が状態やログを通知しないよう、寿命判定と状態反映を同じ同期 gate で保護。
+- Dispatcher の反映待ちに close しても適用成功・失敗が `Cancelled` へ上書きされないよう、終端結果を同期 gate 内で先に確定。
+- Resizable の既定・推奨最小幅を 540px に揃え、任意 Window 埋め込み向けに close 判定とダウンロード完了待ち API を公開。
+
 ## [1.0.18] — Git 記録日: 2026-09-19
 
 - README の導入例を、手動・自動チェック、View 埋め込み、ViewModel の寿命管理に合わせて更新。
