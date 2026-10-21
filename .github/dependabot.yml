@@ -1,51 +1,60 @@
+# 更新方針: 毎週月曜09:00（日本時間）、minor/patchを集約、majorは個別PR。
+# マージ可否は既定ブランチのDependabot auto-mergeが最新CIで判定します。
 version: 2
 updates:
-  - package-ecosystem: "github-actions"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "09:00"
-      timezone: "Asia/Tokyo"
-    open-pull-requests-limit: 5
-    groups:
-      actions-minor-patch:
-        patterns: ["*"]
-        update-types: ["minor", "patch"]
-
-  - package-ecosystem: "dotnet-sdk"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "09:00"
-      timezone: "Asia/Tokyo"
-    groups:
-      dotnet-sdk-minor-patch:
-        patterns: ["*"]
-        update-types: ["minor", "patch"]
-
-  # ライブラリ本体、DemoApp、回帰テストの全プロジェクトを監視する。
-  # DemoApp が監視外だと Avalonia.Desktop / Themes.Fluent / Fonts.Inter が取り残される。
-  - package-ecosystem: "nuget"
-    directories:
-      - "/src/VelopackUpdateDialog.Avalonia"
-      - "/samples/DemoApp"
-      - "/tests/VelopackUpdateDialog.Avalonia.RegressionTests"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "09:00"
-      timezone: "Asia/Tokyo"
-    open-pull-requests-limit: 5
-    groups:
-      # Avalonia 系は 2 プロジェクトで同一バージョンに揃える前提なので 1 PR に束ねる。
-      # 個別 PR だと Avalonia だけ上がってバージョン不整合のビルドになる。
-      avalonia:
-        patterns:
-          - "Avalonia"
-          - "Avalonia.*"
-        update-types: ["minor", "patch"]
-      nuget-minor-patch:
-        patterns: ["*"]
-        update-types: ["minor", "patch"]
+- package-ecosystem: github-actions
+  directory: /
+  schedule:
+    interval: weekly
+    day: monday
+    time: 09:00
+    timezone: Asia/Tokyo
+  open-pull-requests-limit: 5
+  groups:
+    minor-and-patch:
+      patterns:
+      - '*'
+      update-types:
+      - minor
+      - patch
+  commit-message:
+    prefix: deps
+- package-ecosystem: dotnet-sdk
+  directory: /
+  schedule:
+    interval: weekly
+    day: monday
+    time: 09:00
+    timezone: Asia/Tokyo
+  open-pull-requests-limit: 5
+  groups:
+    minor-and-patch:
+      patterns:
+      - '*'
+      update-types:
+      - minor
+      - patch
+  commit-message:
+    prefix: deps
+- package-ecosystem: nuget
+  directories:
+  - /samples/DemoApp
+  - /src/VelopackUpdateDialog.Avalonia
+  - /tests/VelopackUpdateDialog.Avalonia.RegressionTests
+  schedule:
+    interval: weekly
+    day: monday
+    time: 09:00
+    timezone: Asia/Tokyo
+  open-pull-requests-limit: 5
+  groups:
+    minor-and-patch:
+      patterns:
+      - '*'
+      update-types:
+      - minor
+      - patch
+  commit-message:
+    prefix: deps
+  allow:
+  - dependency-type: all
