@@ -7,7 +7,7 @@
         "remote": "origin",
         "reference": "VelopackUpdateDialog.Avalonia",
         "ready": "dotnet package search VelopackUpdateDialog.Avalonia --exact-match --source https://api.nuget.org/v3/index.json --format json",
-        "update": "pwsh -NoProfile -File ../UpdateDownloadDialog/scripts/update-nuget-consumer.ps1 -PackageId VelopackUpdateDialog.Avalonia -ProjectPaths 'src/Ferry/Ferry.csproj' -OldVersion {{OLD_VERSION}} -Version {{NEW_VERSION}} && dotnet restore Ferry.slnx --force-evaluate --source https://api.nuget.org/v3/index.json --no-http-cache && dotnet restore tests/Ferry.StartupSmoke/Ferry.StartupSmoke.csproj --force-evaluate --source https://api.nuget.org/v3/index.json --no-http-cache",
+        "update": "pwsh -NoProfile -File ../UpdateDownloadDialog/scripts/update-nuget-consumer.ps1 -PackageId VelopackUpdateDialog.Avalonia -ProjectPaths 'src/Ferry/Ferry.csproj' -OldVersion {{OLD_VERSION}} -Version {{NEW_VERSION}} && dotnet restore Ferry.slnx --force-evaluate --source https://api.nuget.org/v3/index.json --no-http-cache -p:Configuration=Release && dotnet restore tests/Ferry.StartupSmoke/Ferry.StartupSmoke.csproj --force-evaluate --source https://api.nuget.org/v3/index.json --no-http-cache -p:Configuration=Release",
         "allowedPaths": [
           "src/Ferry/Ferry.csproj",
           "src/Ferry/packages.lock.json",
@@ -15,10 +15,10 @@
           "tests/Ferry.StartupSmoke/packages.lock.json"
         ],
         "verify": [
-          "dotnet restore tests/Ferry.StartupSmoke/Ferry.StartupSmoke.csproj --locked-mode --source https://api.nuget.org/v3/index.json --no-http-cache",
-          "dotnet restore Ferry.slnx --locked-mode --source https://api.nuget.org/v3/index.json --no-http-cache",
-          "dotnet build Ferry.slnx --configuration Release --no-restore",
-          "dotnet test tests/Ferry.Tests/Ferry.Tests.csproj --configuration Release --no-build --no-restore"
+          "dotnet restore tests/Ferry.StartupSmoke/Ferry.StartupSmoke.csproj --locked-mode --source https://api.nuget.org/v3/index.json --no-http-cache -p:Configuration=Release",
+          "dotnet restore Ferry.slnx --locked-mode --source https://api.nuget.org/v3/index.json --no-http-cache -p:Configuration=Release",
+          "dotnet build Ferry.slnx --configuration Release --no-restore -p:UseMicrosoftTestingPlatformRunner=true",
+          "dotnet test tests/Ferry.Tests/Ferry.Tests.csproj --configuration Release --no-build --no-restore -p:UseMicrosoftTestingPlatformRunner=true"
         ],
         "commitMessage": "VelopackUpdateDialog.Avaloniaを{{NEW_VERSION}}へ更新する"
       },
@@ -28,18 +28,19 @@
         "remote": "origin",
         "reference": "VelopackUpdateDialog.Avalonia",
         "ready": "dotnet package search VelopackUpdateDialog.Avalonia --exact-match --source https://api.nuget.org/v3/index.json --format json",
-        "update": "pwsh -NoProfile -File ../UpdateDownloadDialog/scripts/update-nuget-consumer.ps1 -PackageId VelopackUpdateDialog.Avalonia -ProjectPaths 'src/Fumilume/Fumilume.csproj' -OldVersion {{OLD_VERSION}} -Version {{NEW_VERSION}} && dotnet restore tests/Fumilume.MacE2E/Fumilume.MacE2E.csproj --force-evaluate --source https://api.nuget.org/v3/index.json --no-http-cache && dotnet restore Fumilume.slnx --force-evaluate --source https://api.nuget.org/v3/index.json --no-http-cache",
+        "update": "pwsh -NoProfile -File ../UpdateDownloadDialog/scripts/update-nuget-consumer.ps1 -PackageId VelopackUpdateDialog.Avalonia -ProjectPaths 'src/Fumilume/Fumilume.csproj' -OldVersion {{OLD_VERSION}} -Version {{NEW_VERSION}} && dotnet restore tests/Fumilume.MacE2E/Fumilume.MacE2E.csproj -p:FumilumeTargetMac=true -r osx-arm64 --force-evaluate --source https://api.nuget.org/v3/index.json --no-http-cache -p:Configuration=Release && dotnet restore Fumilume.slnx --force-evaluate --source https://api.nuget.org/v3/index.json --no-http-cache -p:Configuration=Release",
         "allowedPaths": [
           "src/Fumilume/Fumilume.csproj",
           "src/Fumilume/packages.lock.json",
           "tests/Fumilume.Tests/Fumilume.Tests.csproj",
           "tests/Fumilume.Tests/packages.lock.json",
-          "tests/Fumilume.MacE2E/packages.lock.json"
+          "tests/Fumilume.MacE2E/packages.lock.json",
+          "src/Fumilume/packages.macos.lock.json"
         ],
         "verify": [
-          "dotnet restore tests/Fumilume.MacE2E/Fumilume.MacE2E.csproj --locked-mode --source https://api.nuget.org/v3/index.json --no-http-cache",
-          "dotnet restore Fumilume.slnx --locked-mode --source https://api.nuget.org/v3/index.json --no-http-cache",
-          "dotnet test Fumilume.slnx --configuration Release --no-restore"
+          "dotnet restore tests/Fumilume.MacE2E/Fumilume.MacE2E.csproj -p:FumilumeTargetMac=true -r osx-arm64 --locked-mode --source https://api.nuget.org/v3/index.json --no-http-cache -p:Configuration=Release",
+          "dotnet restore Fumilume.slnx --locked-mode --source https://api.nuget.org/v3/index.json --no-http-cache -p:Configuration=Release",
+          "dotnet test Fumilume.slnx --configuration Release --no-restore -p:UseMicrosoftTestingPlatformRunner=true"
         ],
         "commitMessage": "VelopackUpdateDialog.Avaloniaを{{NEW_VERSION}}へ更新する"
       },
@@ -49,15 +50,15 @@
         "remote": "origin",
         "reference": "VelopackUpdateDialog.Avalonia",
         "ready": "dotnet package search VelopackUpdateDialog.Avalonia --exact-match --source https://api.nuget.org/v3/index.json --format json",
-        "update": "pwsh -NoProfile -File ../UpdateDownloadDialog/scripts/update-nuget-consumer.ps1 -PackageId VelopackUpdateDialog.Avalonia -ProjectPaths 'src/Kiriha/Kiriha.csproj' -OldVersion {{OLD_VERSION}} -Version {{NEW_VERSION}} && dotnet restore Kiriha.slnx --force-evaluate --source https://api.nuget.org/v3/index.json --no-http-cache",
+        "update": "pwsh -NoProfile -File ../UpdateDownloadDialog/scripts/update-nuget-consumer.ps1 -PackageId VelopackUpdateDialog.Avalonia -ProjectPaths 'src/Kiriha/Kiriha.csproj' -OldVersion {{OLD_VERSION}} -Version {{NEW_VERSION}} && dotnet restore Kiriha.slnx --force-evaluate --source https://api.nuget.org/v3/index.json --no-http-cache -p:Configuration=Release",
         "allowedPaths": [
           "src/Kiriha/Kiriha.csproj",
           "src/Kiriha/packages.lock.json",
           "tests/Kiriha.Tests/packages.lock.json"
         ],
         "verify": [
-          "dotnet restore Kiriha.slnx --locked-mode --source https://api.nuget.org/v3/index.json --no-http-cache",
-          "dotnet test --project tests/Kiriha.Tests/Kiriha.Tests.csproj --configuration Release --no-restore"
+          "dotnet restore Kiriha.slnx --locked-mode --source https://api.nuget.org/v3/index.json --no-http-cache -p:Configuration=Release",
+          "dotnet test --project tests/Kiriha.Tests/Kiriha.Tests.csproj --configuration Release --no-restore -p:UseMicrosoftTestingPlatformRunner=true"
         ],
         "commitMessage": "VelopackUpdateDialog.Avaloniaを{{NEW_VERSION}}へ更新する"
       },
@@ -67,7 +68,7 @@
         "remote": "origin",
         "reference": "VelopackUpdateDialog.Avalonia",
         "ready": "dotnet package search VelopackUpdateDialog.Avalonia --exact-match --source https://api.nuget.org/v3/index.json --format json",
-        "update": "pwsh -NoProfile -File ../UpdateDownloadDialog/scripts/update-nuget-consumer.ps1 -PackageId VelopackUpdateDialog.Avalonia -ProjectPaths 'src/Komorebi.csproj' -OldVersion {{OLD_VERSION}} -Version {{NEW_VERSION}} && dotnet restore Komorebi.slnx --force-evaluate --source https://api.nuget.org/v3/index.json --no-http-cache && dotnet restore tests/CloneLongPaths.E2E/CloneLongPaths.E2E.csproj --force-evaluate --source https://api.nuget.org/v3/index.json --no-http-cache && dotnet restore tests/Recovery.E2E/Recovery.E2E.csproj --force-evaluate --source https://api.nuget.org/v3/index.json --no-http-cache && dotnet restore tests/UIWorkflow.E2E/UIWorkflow.E2E.csproj --force-evaluate --source https://api.nuget.org/v3/index.json --no-http-cache",
+        "update": "pwsh -NoProfile -File ../UpdateDownloadDialog/scripts/update-nuget-consumer.ps1 -PackageId VelopackUpdateDialog.Avalonia -ProjectPaths 'src/Komorebi.csproj' -OldVersion {{OLD_VERSION}} -Version {{NEW_VERSION}} && dotnet restore Komorebi.slnx --force-evaluate --source https://api.nuget.org/v3/index.json --no-http-cache -p:Configuration=Release && dotnet restore tests/CloneLongPaths.E2E/CloneLongPaths.E2E.csproj --force-evaluate --source https://api.nuget.org/v3/index.json --no-http-cache -p:Configuration=Release && dotnet restore tests/Recovery.E2E/Recovery.E2E.csproj --force-evaluate --source https://api.nuget.org/v3/index.json --no-http-cache -p:Configuration=Release && dotnet restore tests/UIWorkflow.E2E/UIWorkflow.E2E.csproj --force-evaluate --source https://api.nuget.org/v3/index.json --no-http-cache -p:Configuration=Release",
         "allowedPaths": [
           "src/Komorebi.csproj",
           "src/packages.lock.json",
@@ -77,12 +78,12 @@
           "tests/UIWorkflow.E2E/packages.lock.json"
         ],
         "verify": [
-          "dotnet restore tests/UIWorkflow.E2E/UIWorkflow.E2E.csproj --locked-mode --source https://api.nuget.org/v3/index.json --no-http-cache",
-          "dotnet restore tests/Recovery.E2E/Recovery.E2E.csproj --locked-mode --source https://api.nuget.org/v3/index.json --no-http-cache",
-          "dotnet restore tests/CloneLongPaths.E2E/CloneLongPaths.E2E.csproj --locked-mode --source https://api.nuget.org/v3/index.json --no-http-cache",
-          "dotnet restore Komorebi.slnx --locked-mode --source https://api.nuget.org/v3/index.json --no-http-cache",
-          "dotnet build Komorebi.slnx --configuration Release --no-restore",
-          "dotnet test --project tests/Komorebi.Tests/Komorebi.Tests.csproj --configuration Release --no-build --no-restore"
+          "dotnet restore tests/UIWorkflow.E2E/UIWorkflow.E2E.csproj --locked-mode --source https://api.nuget.org/v3/index.json --no-http-cache -p:Configuration=Release",
+          "dotnet restore tests/Recovery.E2E/Recovery.E2E.csproj --locked-mode --source https://api.nuget.org/v3/index.json --no-http-cache -p:Configuration=Release",
+          "dotnet restore tests/CloneLongPaths.E2E/CloneLongPaths.E2E.csproj --locked-mode --source https://api.nuget.org/v3/index.json --no-http-cache -p:Configuration=Release",
+          "dotnet restore Komorebi.slnx --locked-mode --source https://api.nuget.org/v3/index.json --no-http-cache -p:Configuration=Release",
+          "dotnet build Komorebi.slnx --configuration Release --no-restore -p:UseMicrosoftTestingPlatformRunner=true",
+          "dotnet test --project tests/Komorebi.Tests/Komorebi.Tests.csproj --configuration Release --no-build --no-restore -p:UseMicrosoftTestingPlatformRunner=true"
         ],
         "commitMessage": "VelopackUpdateDialog.Avaloniaを{{NEW_VERSION}}へ更新する"
       },
@@ -92,14 +93,14 @@
         "remote": "origin",
         "reference": "VelopackUpdateDialog.Avalonia",
         "ready": "dotnet package search VelopackUpdateDialog.Avalonia --exact-match --source https://api.nuget.org/v3/index.json --format json",
-        "update": "pwsh -NoProfile -File ../UpdateDownloadDialog/scripts/update-nuget-consumer.ps1 -PackageId VelopackUpdateDialog.Avalonia -ProjectPaths 'src/Lhamiel/Lhamiel.csproj' -OldVersion {{OLD_VERSION}} -Version {{NEW_VERSION}} && dotnet restore Lhamiel.slnx --force-evaluate --source https://api.nuget.org/v3/index.json --no-http-cache -p:KagayoiSupportClientUsePackage=true",
+        "update": "pwsh -NoProfile -File ../UpdateDownloadDialog/scripts/update-nuget-consumer.ps1 -PackageId VelopackUpdateDialog.Avalonia -ProjectPaths 'src/Lhamiel/Lhamiel.csproj' -OldVersion {{OLD_VERSION}} -Version {{NEW_VERSION}} && dotnet restore Lhamiel.slnx --force-evaluate --source https://api.nuget.org/v3/index.json --no-http-cache -p:KagayoiSupportClientUsePackage=true -p:Configuration=Release",
         "allowedPaths": [
           "src/Lhamiel/Lhamiel.csproj",
           "src/Lhamiel/packages.lock.json",
           "src/Lhamiel.Tests.Unit/packages.lock.json"
         ],
         "verify": [
-          "dotnet restore Lhamiel.slnx --locked-mode --source https://api.nuget.org/v3/index.json --no-http-cache -p:KagayoiSupportClientUsePackage=true",
+          "dotnet restore Lhamiel.slnx --locked-mode --source https://api.nuget.org/v3/index.json --no-http-cache -p:KagayoiSupportClientUsePackage=true -p:Configuration=Release",
           "dotnet test Lhamiel.slnx --configuration Release --no-restore -p:KagayoiSupportClientUsePackage=true"
         ],
         "commitMessage": "VelopackUpdateDialog.Avaloniaを{{NEW_VERSION}}へ更新する"
@@ -110,7 +111,7 @@
         "remote": "origin",
         "reference": "VelopackUpdateDialog.Avalonia",
         "ready": "dotnet package search VelopackUpdateDialog.Avalonia --exact-match --source https://api.nuget.org/v3/index.json --format json",
-        "update": "pwsh -NoProfile -File ../UpdateDownloadDialog/scripts/update-nuget-consumer.ps1 -PackageId VelopackUpdateDialog.Avalonia -ProjectPaths 'src/Lumin4ti.UI/Lumin4ti.UI.csproj' -OldVersion {{OLD_VERSION}} -Version {{NEW_VERSION}} && dotnet restore Lumin4ti.slnx --force-evaluate --source https://api.nuget.org/v3/index.json --no-http-cache",
+        "update": "pwsh -NoProfile -File ../UpdateDownloadDialog/scripts/update-nuget-consumer.ps1 -PackageId VelopackUpdateDialog.Avalonia -ProjectPaths 'src/Lumin4ti.UI/Lumin4ti.UI.csproj' -OldVersion {{OLD_VERSION}} -Version {{NEW_VERSION}} && dotnet restore Lumin4ti.slnx --force-evaluate --source https://api.nuget.org/v3/index.json --no-http-cache -p:Configuration=Release",
         "allowedPaths": [
           "src/Lumin4ti.UI/Lumin4ti.UI.csproj",
           "src/Lumin4ti.Core/packages.lock.json",
@@ -118,7 +119,7 @@
           "src/Lumin4ti.UI/packages.lock.json"
         ],
         "verify": [
-          "dotnet restore Lumin4ti.slnx --locked-mode --source https://api.nuget.org/v3/index.json --no-http-cache",
+          "dotnet restore Lumin4ti.slnx --locked-mode --source https://api.nuget.org/v3/index.json --no-http-cache -p:Configuration=Release",
           "dotnet build Lumin4ti.slnx --configuration Release --no-restore",
           "dotnet test Lumin4ti.slnx --configuration Release --no-build --no-restore"
         ],
@@ -150,12 +151,12 @@
         "remote": "origin",
         "reference": "VelopackUpdateDialog.Avalonia",
         "ready": "dotnet package search VelopackUpdateDialog.Avalonia --exact-match --source https://api.nuget.org/v3/index.json --format json",
-        "update": "pwsh -NoProfile -File ../UpdateDownloadDialog/scripts/update-nuget-consumer.ps1 -PackageId VelopackUpdateDialog.Avalonia -ProjectPaths 'src/Shisui.UI/Shisui.UI.csproj' -OldVersion {{OLD_VERSION}} -Version {{NEW_VERSION}} && dotnet restore Shisui.slnx --force-evaluate --source https://api.nuget.org/v3/index.json --no-http-cache",
+        "update": "pwsh -NoProfile -File ../UpdateDownloadDialog/scripts/update-nuget-consumer.ps1 -PackageId VelopackUpdateDialog.Avalonia -ProjectPaths 'src/Shisui.UI/Shisui.UI.csproj' -OldVersion {{OLD_VERSION}} -Version {{NEW_VERSION}} && dotnet restore Shisui.slnx --force-evaluate --source https://api.nuget.org/v3/index.json --no-http-cache -p:Configuration=Release",
         "allowedPaths": [
           "src/Shisui.UI/Shisui.UI.csproj"
         ],
         "verify": [
-          "dotnet restore Shisui.slnx --source https://api.nuget.org/v3/index.json --no-http-cache",
+          "dotnet restore Shisui.slnx --source https://api.nuget.org/v3/index.json --no-http-cache -p:Configuration=Release",
           "dotnet build Shisui.slnx --configuration Release --no-restore",
           "dotnet test Shisui.slnx --configuration Release --no-build --no-restore"
         ],
@@ -167,12 +168,12 @@
         "remote": "origin",
         "reference": "VelopackUpdateDialog.Avalonia",
         "ready": "dotnet package search VelopackUpdateDialog.Avalonia --exact-match --source https://api.nuget.org/v3/index.json --format json",
-        "update": "pwsh -NoProfile -File ../UpdateDownloadDialog/scripts/update-nuget-consumer.ps1 -PackageId VelopackUpdateDialog.Avalonia -ProjectPaths 'Sonireva.csproj' -OldVersion {{OLD_VERSION}} -Version {{NEW_VERSION}} && dotnet restore Sonireva.slnx --force-evaluate --source https://api.nuget.org/v3/index.json --no-http-cache",
+        "update": "pwsh -NoProfile -File ../UpdateDownloadDialog/scripts/update-nuget-consumer.ps1 -PackageId VelopackUpdateDialog.Avalonia -ProjectPaths 'Sonireva.csproj' -OldVersion {{OLD_VERSION}} -Version {{NEW_VERSION}} && dotnet restore Sonireva.slnx --force-evaluate --source https://api.nuget.org/v3/index.json --no-http-cache -p:Configuration=Release",
         "allowedPaths": [
           "Sonireva.csproj"
         ],
         "verify": [
-          "dotnet restore Sonireva.slnx --source https://api.nuget.org/v3/index.json --no-http-cache",
+          "dotnet restore Sonireva.slnx --source https://api.nuget.org/v3/index.json --no-http-cache -p:Configuration=Release",
           "dotnet build Sonireva.slnx --configuration Release --no-restore",
           "dotnet build tests/Sonireva.IntegrationTests/Sonireva.IntegrationTests.csproj --configuration Release --no-restore"
         ],
@@ -184,16 +185,16 @@
         "remote": "origin",
         "reference": "VelopackUpdateDialog.Avalonia",
         "ready": "dotnet package search VelopackUpdateDialog.Avalonia --exact-match --source https://api.nuget.org/v3/index.json --format json",
-        "update": "pwsh -NoProfile -File ../UpdateDownloadDialog/scripts/update-nuget-consumer.ps1 -PackageId VelopackUpdateDialog.Avalonia -ProjectPaths 'src/Taskmetry/Taskmetry.csproj' -OldVersion {{OLD_VERSION}} -Version {{NEW_VERSION}} && dotnet restore Taskmetry.slnx --force-evaluate --source https://api.nuget.org/v3/index.json --no-http-cache -p:Platform=x64",
+        "update": "pwsh -NoProfile -File ../UpdateDownloadDialog/scripts/update-nuget-consumer.ps1 -PackageId VelopackUpdateDialog.Avalonia -ProjectPaths 'src/Taskmetry/Taskmetry.csproj' -OldVersion {{OLD_VERSION}} -Version {{NEW_VERSION}} && dotnet restore Taskmetry.slnx --force-evaluate --source https://api.nuget.org/v3/index.json --no-http-cache -p:Platform=x64 -p:Configuration=Release",
         "allowedPaths": [
           "src/Taskmetry/Taskmetry.csproj",
           "src/Taskmetry/packages.lock.json",
           "src/Taskmetry.Tests/packages.lock.json"
         ],
         "verify": [
-          "dotnet restore Taskmetry.slnx --locked-mode --source https://api.nuget.org/v3/index.json --no-http-cache -p:Platform=x64",
-          "dotnet build Taskmetry.slnx --configuration Release --no-restore -p:Platform=x64",
-          "dotnet test Taskmetry.slnx --configuration Release --no-build --no-restore -p:Platform=x64"
+          "dotnet restore Taskmetry.slnx --locked-mode --source https://api.nuget.org/v3/index.json --no-http-cache -p:Platform=x64 -p:Configuration=Release",
+          "dotnet build Taskmetry.slnx --configuration Release --no-restore -p:Platform=x64 -p:UseMicrosoftTestingPlatformRunner=true",
+          "dotnet test Taskmetry.slnx --configuration Release --no-build --no-restore -p:Platform=x64 -p:UseMicrosoftTestingPlatformRunner=true"
         ],
         "commitMessage": "VelopackUpdateDialog.Avaloniaを{{NEW_VERSION}}へ更新する"
       },
@@ -203,14 +204,14 @@
         "remote": "origin",
         "reference": "VelopackUpdateDialog.Avalonia",
         "ready": "dotnet package search VelopackUpdateDialog.Avalonia --exact-match --source https://api.nuget.org/v3/index.json --format json",
-        "update": "pwsh -NoProfile -File ../UpdateDownloadDialog/scripts/update-nuget-consumer.ps1 -PackageId VelopackUpdateDialog.Avalonia -ProjectPaths 'src/VStoVSC/VStoVSC.csproj' -OldVersion {{OLD_VERSION}} -Version {{NEW_VERSION}} && dotnet restore VStoVSC.slnx --force-evaluate --source https://api.nuget.org/v3/index.json --no-http-cache -p:Platform=x64",
+        "update": "pwsh -NoProfile -File ../UpdateDownloadDialog/scripts/update-nuget-consumer.ps1 -PackageId VelopackUpdateDialog.Avalonia -ProjectPaths 'src/VStoVSC/VStoVSC.csproj' -OldVersion {{OLD_VERSION}} -Version {{NEW_VERSION}} && dotnet restore VStoVSC.slnx --force-evaluate --source https://api.nuget.org/v3/index.json --no-http-cache -p:Platform=x64 -p:Configuration=Release",
         "allowedPaths": [
           "src/VStoVSC/VStoVSC.csproj",
           "src/VStoVSC/packages.lock.json",
           "tests/VStoVSC.Tests/packages.lock.json"
         ],
         "verify": [
-          "dotnet restore VStoVSC.slnx --locked-mode --source https://api.nuget.org/v3/index.json --no-http-cache -p:Platform=x64",
+          "dotnet restore VStoVSC.slnx --locked-mode --source https://api.nuget.org/v3/index.json --no-http-cache -p:Platform=x64 -p:Configuration=Release",
           "dotnet build VStoVSC.slnx --configuration Release --no-restore -p:Platform=x64",
           "dotnet test tests/VStoVSC.Tests/VStoVSC.Tests.csproj -c Release -p:Platform=x64 --no-build --no-restore"
         ],
