@@ -17,7 +17,7 @@
 | `UpdateDialogViewModel` | `UpdateState` 状態機械、Velopack 呼び出し、進捗、エラー、`UpdateOutcome` の確定 | Window の生成・表示とホスト固有の永続化を行わない。手動・自動による表示差は Window 側が担い、更新確認の状態遷移自体は同じ |
 | `UpdateDialogOptions` / `IUpdateDialogStrings` | 配色、文字列、Window 外観、無視・エラー・ログ通知などの公開カスタマイズ契約 | 永続化先やログ送信先は持たず、イベントでホストへ返す |
 | `Models/` | 状態、結果、Window モード、内部既定値の型定義 | UI と Velopack の処理を持たない |
-| `Themes/` / `AcrylicFallbackHelper` | 共通スタイルと Custom chrome の背景切替 | System chrome ではソリッド背景を使い、RDP・透明効果無効・acrylic 非許可時も不透明背景へフォールバックする |
+| `Themes/` / `AcrylicFallbackHelper` | 共通スタイルと Custom chrome の背景切替 | System chrome ではソリッド背景を使い、RDP・透明効果無効・acrylic 非許可時も不透明背景へフォールバックする。acrylic 非許可時は OS 状態を照会しない |
 | `samples/DemoApp` | 各状態、テーマ、Window モード、文字列差し替えの目視確認 | 配布パッケージには含まれない |
 | `tests/VelopackUpdateDialog.Avalonia.RegressionTests` | ダウンロード完了・適用開始・Window close の順序と終了後 callback 抑止の回帰確認 | 実際の更新適用や UI 表示は行わず、internal のテスト境界から決定的に競合を再現する |
 
@@ -25,7 +25,7 @@
 
 - Velopack の `UpdateManager` が更新情報、ダウンロード、適用と再起動を担う。
 - CommunityToolkit.Mvvm が状態通知を生成し、Avalonia の compiled binding が XAML へ反映する。
-- ライブラリ自身はログを出力せず、特定のロガー実装にも依存しない。状態遷移、警告、失敗は `LogEmitted` から構造化した項目としてホストへ返し、失敗は `ErrorOccurred` と `UpdateDialogResult` からも観測できる。
+- ライブラリ自身はログを出力せず、特定のロガー実装にも依存しない。状態遷移、警告、失敗は `LogEmitted` から構造化した項目としてホストへ返し、失敗は `ErrorOccurred` と `UpdateDialogResult` からも観測できる。未購読時はログ項目を生成せず、購読者の列挙でも配列を生成しない。
 
 ## データフロー
 
@@ -69,7 +69,8 @@ Downloading -> 適用・再起動 | Available（キャンセル） | Failed
 
 - NuGet PackageId は `VelopackUpdateDialog.Avalonia`、AssemblyName・RootNamespace・公開 namespace は `VelopackUpdateDialog` とする。
 - Window → View → ViewModel の依存方向を保ち、更新ロジックは ViewModel に集約する。
-- すべての `UpdateState` は表示可能なパネルへ対応させる。派生表示プロパティを増やした場合は `OnStateChanged` から変更通知する。
+- すべての `UpdateState` は表示可能なパネルへ対応させる。派生表示プロパティを増やした場合は `OnStateChanged` から変更通知する。派生プロパティの通知引数は名前ごとに共有し、通知順を維持する。
+- アイコン・複合コンテンツの操作ボタンには、表示文言と同じ `Strings` の値をアクセシビリティ名として明示する。
 - 更新確認の再入防止は `_checkInFlight` で行う。呼び出し元トークンによる確認キャンセル時は `FinalOutcome` を `Cancelled` にし、Window が閉じるまで `Checking` 表示を維持する。
 - 公開 ViewModel の再利用時は、新しい確認・ダウンロードの開始時と `Available` / `UpToDate` の確定時に、過去の `FinalOutcome` / `FinalError` / `ErrorMessage` をリセットする。現在の close 結果と進行中判定へ過去操作の終端情報を持ち越さない。
 - ダウンロード由来の Dispatcher callback は操作世代 ID を持つ。新しい確認・`Available` / `UpToDate`・ダウンロードへ進んだ時点で世代を更新し、遅延した旧世代の進捗・成功・失敗を反映しない。
@@ -104,4 +105,4 @@ Downloading -> 適用・再起動 | Available（キャンセル） | Failed
 
 `VelopackUpdateDialog.Avalonia.slnx` は配布ライブラリ、DemoApp、実行型回帰テストから成る。ローカル検証ではソリューション全体を Release build し、回帰テストでダウンロード・適用・終了の競合を確認し、DemoApp で各状態を目視確認する。
 
-パッケージメタデータと製品バージョンは `Directory.Build.props` に集約され、pack 出力は `artifacts/` に置かれる。`release/**` ブランチへの push または手動実行で GitHub Actions が配布ライブラリの build、回帰テスト、pack を行い、NuGet.org Trusted Publishing で取得した短期資格情報だけを使って公開する。CI は DemoApp の build と目視確認を行わない。workflow は `artifacts/` の対象パッケージが1件でない場合、どのパッケージも送信せず異常終了する。
+パッケージメタデータと製品バージョンは `Directory.Build.props` に集約され、pack 出力は `artifacts/` に置かれる。`release/**` ブランチへの push または手動実行で GitHub Actions が配布ライブラリと回帰テストをまとめて build し、その成果物で回帰テストと pack を行う。NuGet.org Trusted Publishing で取得した短期資格情報だけを使って公開する。CI は DemoApp の build と目視確認を行わない。workflow は `artifacts/` の対象パッケージが1件でない場合、どのパッケージも送信せず異常終了する。

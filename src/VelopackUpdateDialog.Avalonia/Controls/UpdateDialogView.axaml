@@ -54,6 +54,7 @@
 
       <StackPanel Margin="0,8,0,0" Orientation="Horizontal" HorizontalAlignment="Center">
         <Button x:Name="BtnDownload"
+                AutomationProperties.Name="{Binding Strings.DownloadAndInstall}"
                 Classes="primary"
                 Height="30"
                 HorizontalContentAlignment="Center"
@@ -69,6 +70,7 @@
         </Button>
 
         <Button x:Name="BtnIgnore"
+                AutomationProperties.Name="{Binding Strings.IgnoreThisVersion}"
                 Classes="secondary"
                 Height="30"
                 Margin="8,0,0,0"

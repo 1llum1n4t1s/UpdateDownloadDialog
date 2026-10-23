@@ -86,12 +86,13 @@ public sealed class UpdateDialogOptions
 
     internal void RaiseErrorOccurred(Exception ex) => ErrorOccurred?.Invoke(ex);
 
-    internal void RaiseLog(UpdateDialogLogEntry entry)
+    internal void RaiseLog(UpdateDialogLogLevel level, string message, Exception? exception = null)
     {
         if (LogEmitted is not { } handlers)
             return;
 
-        foreach (Action<UpdateDialogLogEntry> handler in handlers.GetInvocationList())
+        var entry = new UpdateDialogLogEntry(level, message, exception);
+        foreach (var handler in Delegate.EnumerateInvocationList(handlers))
         {
             try
             {

@@ -62,6 +62,7 @@
                    IsHitTestVisible="False"/>
 
         <Button x:Name="BtnClose"
+                AutomationProperties.Name="{Binding Strings.Close}"
                 Classes="titlebar-close"
                 HorizontalAlignment="Right"
                 VerticalAlignment="Stretch"

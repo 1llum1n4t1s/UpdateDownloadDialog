@@ -1,4 +1,5 @@
 using System;
+using System.ComponentModel;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Media;
@@ -140,15 +141,13 @@ public sealed partial class UpdateDialogViewModel : ObservableObject, IDisposabl
 
     partial void OnStateChanged(UpdateState value)
     {
-        Options.RaiseLog(new UpdateDialogLogEntry(
+        Options.RaiseLog(
             UpdateDialogLogLevel.Information,
-            $"State changed to {value}."));
-        OnPropertyChanged(nameof(IsChecking));
-        OnPropertyChanged(nameof(IsPreparing));
-        OnPropertyChanged(nameof(IsAvailable));
-        OnPropertyChanged(nameof(IsUpToDate));
-        OnPropertyChanged(nameof(IsDownloading));
-        OnPropertyChanged(nameof(IsFailed));
+            $"State changed to {value}.");
+        foreach (var args in _statePropertyChangedEventArgs)
+        {
+            OnPropertyChanged(args);
+        }
     }
 
     // ---------------- 状態遷移 ----------------
@@ -198,10 +197,10 @@ public sealed partial class UpdateDialogViewModel : ObservableObject, IDisposabl
             ErrorMessage = ex.InnerException?.Message ?? ex.Message;
             FinalOutcome = UpdateOutcome.Failed;
             State = UpdateState.Failed;
-            Options.RaiseLog(new UpdateDialogLogEntry(
+            Options.RaiseLog(
                 UpdateDialogLogLevel.Error,
                 "Update flow failed.",
-                ex));
+                ex);
             Options.RaiseErrorOccurred(ex);
         }
     }
@@ -344,9 +343,9 @@ public sealed partial class UpdateDialogViewModel : ObservableObject, IDisposabl
             // 黙って no-op にするとダウンロードボタンが無反応に見えるため、ホストへ通知して顕在化する。
             if (_updateInfo is null)
             {
-                Options.RaiseLog(new UpdateDialogLogEntry(
+                Options.RaiseLog(
                     UpdateDialogLogLevel.Warning,
-                    "DownloadAndApplyAsync was called without UpdateInfo. Reach Available via CheckAsync()/SetAvailable() first."));
+                    "DownloadAndApplyAsync was called without UpdateInfo. Reach Available via CheckAsync()/SetAvailable() first.");
                 return Task.CompletedTask;
             }
 
@@ -588,6 +587,17 @@ public sealed partial class UpdateDialogViewModel : ObservableObject, IDisposabl
             _downloadCts?.Cancel();
         }
     }
+
+    // 派生プロパティの通知順を保ち、状態変更ごとの通知引数の生成を避ける。
+    private static readonly PropertyChangedEventArgs[] _statePropertyChangedEventArgs =
+    [
+        new(nameof(IsChecking)),
+        new(nameof(IsPreparing)),
+        new(nameof(IsAvailable)),
+        new(nameof(IsUpToDate)),
+        new(nameof(IsDownloading)),
+        new(nameof(IsFailed)),
+    ];
 
     private readonly object _downloadGate = new();
     private readonly UpdateManager _manager;

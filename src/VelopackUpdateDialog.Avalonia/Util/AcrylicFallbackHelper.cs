@@ -21,6 +21,11 @@ internal static class AcrylicFallbackHelper
     public static bool ShouldUseOpaqueBackground(Window window)
     {
         var acrylicGranted = window.ActualTransparencyLevel == WindowTransparencyLevel.AcrylicBlur;
+        if (!acrylicGranted)
+        {
+            return true;
+        }
+
         return ShouldUseOpaqueBackgroundCore(
             acrylicGranted,
             OperatingSystem.IsWindows(),
@@ -29,7 +34,7 @@ internal static class AcrylicFallbackHelper
     }
 
     /// <summary>判定ロジック本体 (副作用なしの純粋関数として分離)。</summary>
-    internal static bool ShouldUseOpaqueBackgroundCore(
+    private static bool ShouldUseOpaqueBackgroundCore(
         bool acrylicGranted, bool isWindows, bool isRemoteSession, bool transparencyEnabled)
     {
         if (!acrylicGranted)

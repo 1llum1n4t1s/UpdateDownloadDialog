@@ -23,11 +23,11 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
-      - name: Build VelopackUpdateDialog.Avalonia
-        run: dotnet build src/VelopackUpdateDialog.Avalonia/VelopackUpdateDialog.Avalonia.csproj -c Release
+      - name: Build library and regression tests
+        run: dotnet build tests/VelopackUpdateDialog.Avalonia.RegressionTests/VelopackUpdateDialog.Avalonia.RegressionTests.csproj -c Release
 
       - name: Run download lifetime regression tests
-        run: dotnet run --project tests/VelopackUpdateDialog.Avalonia.RegressionTests/VelopackUpdateDialog.Avalonia.RegressionTests.csproj -c Release
+        run: dotnet run --project tests/VelopackUpdateDialog.Avalonia.RegressionTests/VelopackUpdateDialog.Avalonia.RegressionTests.csproj -c Release --no-build
 
       - name: Pack VelopackUpdateDialog.Avalonia
         run: dotnet pack src/VelopackUpdateDialog.Avalonia/VelopackUpdateDialog.Avalonia.csproj -c Release --no-build
