@@ -41,8 +41,8 @@
 
 1. ホストが `ShowAsync(..., manualCheck: false)` を呼ぶ。
 2. Window を生成する前に `CheckAsync` を完了させる。インストール済みアプリで更新確認を開始した後は、呼び出し元トークンのキャンセルを `WaitAsync` で待機へ即時反映する。
-3. 最新版の抑止、無視タグ一致、失敗では Window を表示せず、それぞれ `UpToDate`、`Ignored`、`Failed` を返す。
-4. 表示が必要な更新だけ Window を生成して `Available` 状態を提示する。
+3. `SuppressUpToDateOnAutoCheck=true` の最新版、無視タグ一致、失敗では Window を表示せず、それぞれ `UpToDate`、`Ignored`、`Failed` を返す。
+4. それ以外は Window を生成し、更新があれば `Available`、最新版の抑止が無効なら `UpToDate` 状態を提示する。
 
 ### ダウンロードと適用
 
@@ -106,3 +106,5 @@ Downloading -> 適用・再起動 | Available（キャンセル） | Failed
 `VelopackUpdateDialog.Avalonia.slnx` は配布ライブラリ、DemoApp、実行型回帰テストから成る。ローカル検証ではソリューション全体を Release build し、回帰テストでダウンロード・適用・終了の競合を確認し、DemoApp で各状態を目視確認する。
 
 パッケージメタデータと製品バージョンは `Directory.Build.props` に集約され、pack 出力は `artifacts/` に置かれる。`release/**` ブランチへの push または手動実行で GitHub Actions が配布ライブラリと回帰テストをまとめて build し、その成果物で回帰テストと pack を行う。NuGet.org Trusted Publishing で取得した短期資格情報だけを使って公開する。CI は DemoApp の build と目視確認を行わない。workflow は `artifacts/` の対象パッケージが1件でない場合、どのパッケージも送信せず異常終了する。
+
+公開後の直接参照元への反映は、公開 workflow とは別に `vava.config.json` の `consumerUpdates.targets` で定義する。共通の `scripts/update-nuget-consumer.ps1` は指定プロジェクトの直接参照を検査し、想定旧版または更新先版であることを全件確認してからバージョンを書き換える。復元・検証と変更許可パスは参照元ごとの設定が担う。Release 条件や Platform・RID、テスト起動方式が参照元ごとに異なるため、この境界は共通スクリプトへ集約しない。実行時の規約は [AGENTS.md](AGENTS.md#バージョン番号は触らない) を参照する。

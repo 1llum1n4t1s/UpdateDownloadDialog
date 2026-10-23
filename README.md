@@ -25,14 +25,13 @@ var mgr = new UpdateManager(new GithubSource("https://github.com/owner/repo", st
 await UpdateDialogWindow.ShowAsync(parentWindow, mgr, manualCheck: true);
 ```
 
-起動時にサイレントに自動確認する場合は `manualCheck: false`（既定値）を使う。最新版、無視対象、確認失敗では Window を表示せず結果だけを返す。
+起動時にサイレントに自動確認する場合は `manualCheck: false`（既定値）を使う。既定の設定では、最新版、無視対象、確認失敗で Window を表示せず結果だけを返す。`SuppressUpToDateOnAutoCheck=false` にすると、最新版でも結果を表示する。
 
 ## オプション指定
 
 ```csharp
 using Avalonia;
 using Avalonia.Media;
-using Microsoft.Extensions.Logging;
 
 // 例: MyJapaneseStrings は IUpdateDialogStrings を実装するユーザー定義クラス。
 //     最小実装は samples/DemoApp/MainWindow.axaml.cs の JapaneseStrings を参照。
@@ -67,18 +66,7 @@ options.VersionIgnored += tag => Preferences.IgnoreUpdateTag = tag;
 // エラー発生時にログ以外の個別処理も必要な場合
 options.ErrorOccurred += ex => HandleUpdateFailure(ex);
 
-// 状態遷移、警告、失敗をホスト側の任意のロガーへ転送
-options.LogEmitted += entry =>
-{
-    var level = entry.Level switch
-    {
-        UpdateDialogLogLevel.Information => LogLevel.Information,
-        UpdateDialogLogLevel.Warning => LogLevel.Warning,
-        UpdateDialogLogLevel.Error => LogLevel.Error,
-        _ => LogLevel.None,
-    };
-    logger.Log(level, entry.Exception, "{Message}", entry.Message);
-};
+// ログ転送も行う場合は、後述の「ロギング」の例で LogEmitted を購読する。
 
 var result = await UpdateDialogWindow.ShowAsync(parentWindow, mgr, options, manualCheck: true);
 

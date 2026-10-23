@@ -42,6 +42,8 @@ gh workflow run publish.yml --ref release/x.y.z
 
 `VelopackUpdateDialog.Avalonia` の直接参照元、更新対象ファイル、復元条件、検証コマンドは、リポジトリ直下の `vava.config.json` を正本とする。直接参照元を追加・削除したときは、同じ変更内で `consumerUpdates.targets` を同期する。
 
+参照元の更新・検証では、restore と後続の build / test で Release・Platform・RID などの評価条件を揃える。参照元固有のテスト起動方式、専用スクリプト、ソリューション外の検証プロジェクトも `vava.config.json` の設定に従い、lock ファイルの更新対象を `allowedPaths` に含める。lock ファイルを使う参照元では、更新後に同じ条件の `--locked-mode` 復元で整合を確認する。
+
 ## 設計変更時の規約
 
 実装着手前に [DESIGN.md](DESIGN.md) の該当節を読み、責務の境界と不変条件を維持する。公開レイヤー、状態遷移、自動・手動チェック、スレッド・キャンセル所有権、Window 外観、ホストとのイベント境界を変更した場合は、実装と同じ変更内で DESIGN.md を現在形へ更新する。
