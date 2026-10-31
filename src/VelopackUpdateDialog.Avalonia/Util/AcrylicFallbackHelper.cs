@@ -26,24 +26,8 @@ internal static class AcrylicFallbackHelper
             return true;
         }
 
-        return ShouldUseOpaqueBackgroundCore(
-            acrylicGranted,
-            OperatingSystem.IsWindows(),
-            OperatingSystem.IsWindows() && IsRemoteSession(),
-            !OperatingSystem.IsWindows() || IsTransparencyEnabled());
-    }
-
-    /// <summary>判定ロジック本体 (副作用なしの純粋関数として分離)。</summary>
-    private static bool ShouldUseOpaqueBackgroundCore(
-        bool acrylicGranted, bool isWindows, bool isRemoteSession, bool transparencyEnabled)
-    {
-        if (!acrylicGranted)
-        {
-            return true;
-        }
-
         // Windows は透過効果 OFF / RDP でも acrylicGranted=true を返すので OS 状態で補正する
-        return isWindows && (isRemoteSession || !transparencyEnabled);
+        return OperatingSystem.IsWindows() && (IsRemoteSession() || !IsTransparencyEnabled());
     }
 
     private static bool IsRemoteSession()

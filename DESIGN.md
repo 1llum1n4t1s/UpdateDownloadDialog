@@ -17,7 +17,7 @@
 | `UpdateDialogViewModel` | `UpdateState` 状態機械、Velopack 呼び出し、進捗、エラー、`UpdateOutcome` の確定 | Window の生成・表示とホスト固有の永続化を行わない。手動・自動による表示差は Window 側が担い、更新確認の状態遷移自体は同じ |
 | `UpdateDialogOptions` / `IUpdateDialogStrings` | 配色、文字列、Window 外観、無視・エラー・ログ通知などの公開カスタマイズ契約 | 永続化先やログ送信先は持たず、イベントでホストへ返す |
 | `Models/` | 状態、結果、Window モード、内部既定値の型定義 | UI と Velopack の処理を持たない |
-| `Themes/` / `AcrylicFallbackHelper` | 共通スタイルと Custom chrome の背景切替 | System chrome ではソリッド背景を使い、RDP・透明効果無効・acrylic 非許可時も不透明背景へフォールバックする。acrylic 非許可時は OS 状態を照会しない |
+| `Themes/` / `AcrylicFallbackHelper` | 共通スタイルと Custom chrome の背景切替 | System chrome ではソリッド背景を使い、RDP・透明効果無効・acrylic 非許可時も不透明背景へフォールバックする。acrylic 非許可時は OS 状態を照会せず、RDP 時は透明効果のレジストリを照会しない |
 | `samples/DemoApp` | 各状態、テーマ、Window モード、文字列差し替えの目視確認 | 配布パッケージには含まれない |
 | `tests/VelopackUpdateDialog.Avalonia.RegressionTests` | ダウンロード完了・適用開始・Window close の順序と終了後 callback 抑止の回帰確認 | 実際の更新適用や UI 表示は行わず、internal のテスト境界から決定的に競合を再現する |
 
