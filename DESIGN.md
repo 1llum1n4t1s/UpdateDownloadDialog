@@ -80,11 +80,10 @@ Downloading -> 適用・再起動 | Available（キャンセル） | Failed
 - 適用成功・失敗の最終結果は UI callback より先に同期 gate 内で確定する。Dispatcher の反映が遅延しても close は終端結果を `Cancelled` へ上書きせず、適用処理が戻った場合は `UpToDate` へ遷移して `Downloading` 表示を残さない。
 - Window close または ViewModel の破棄後は、更新確認・ダウンロード由来の進捗、状態、結果、`ErrorOccurred`、`LogEmitted` を更新・通知しない。状態反映と寿命判定は同じ同期 gate 内で行い、`ShowAsync` は所有するバックグラウンド処理を完了まで待つ。
 - インストール済みアプリでの更新確認の呼び出し元キャンセルは `Cancelled`、確認中の Window をユーザーが閉じた場合は `Closed` とする。`UpdateManager.IsInstalled == false` の開発実行では、通信もトークン確認も行わず `UpToDate` とする。Window を閉じる際は寿命トークンで待機を終了し、追跡タスクの完了後に結果を返すため、閉じた後に状態や `ErrorOccurred` を更新しない。
-- Velopack 1.2.0 の `CheckForUpdatesAsync` は `CancellationToken` を受け取らないため、キャンセルできるのは待機だけであり、内部通信は完了まで継続し得る。切り離されたタスクは例外が未観測にならないよう完了まで観測し、結果を状態へ反映しない。
+- 現在参照する Velopack の `CheckForUpdatesAsync` は `CancellationToken` を受け取らないため、キャンセルできるのは待機だけであり、内部通信は完了まで継続し得る。切り離されたタスクは例外が未観測にならないよう完了まで観測し、結果を状態へ反映しない。
 - 更新確認またはダウンロードの `OperationCanceledException` は、対応する呼び出し元トークンが要求済みの場合だけキャンセルとして扱う。HTTP タイムアウトなどトークン由来でない失敗は `Failed` とする。
 - 自動チェックの失敗は Window を表示せず、`LogEmitted`、`ErrorOccurred`、`UpdateDialogResult.Error` から観測可能にする。`SetFailed` による同一失敗のイベント通知は各経路 1 回に保つ。
 - `LogEmitted` は状態変更などを行ったスレッドで同期通知する。購読ハンドラが失敗しても更新フローと他の購読者を止めず、ライブラリ側から代替出力もしない。
-- `UpdateManager.IsInstalled == false` の開発実行は最新版として扱う。
 - URL から `UpdateManager` を作る便利コンストラクタは絶対 HTTPS URL かつ `github.com` に限定する。その他の更新元は、ホストが構成した `UpdateManager` を注入する。
 - Custom chrome は acrylic と不透明背景の両方を持ち、実行環境に応じて一方だけを表示する。System chrome は OS フレームとソリッド背景を使う。
 - Resizable の既定幅と推奨最小幅は、500px のダウンロード進捗バーと左右余白を収める 540px とする。
@@ -103,8 +102,13 @@ Downloading -> 適用・再起動 | Available（キャンセル） | Failed
 
 ## ビルド・検証・配布の境界
 
-`VelopackUpdateDialog.Avalonia.slnx` は配布ライブラリ、DemoApp、実行型回帰テストから成る。ローカル検証ではソリューション全体を Release build し、回帰テストでダウンロード・適用・終了の競合を確認し、DemoApp で各状態を目視確認する。
+`VelopackUpdateDialog.Avalonia.slnx` は配布ライブラリ、DemoApp、実行型回帰テストから成る。ローカルのビルド・回帰テスト・目視確認の手順は [AGENTS.md](AGENTS.md#ビルド--実行コマンド) を参照する。
 
-パッケージメタデータと製品バージョンは `Directory.Build.props` に集約され、pack 出力は `artifacts/` に置かれる。`release/**` ブランチへの push または手動実行で GitHub Actions が配布ライブラリと回帰テストをまとめて build し、その成果物で回帰テストと pack を行う。NuGet.org Trusted Publishing で取得した短期資格情報だけを使って公開する。CI は DemoApp の build と目視確認を行わない。workflow は `artifacts/` の対象パッケージが1件でない場合、どのパッケージも送信せず異常終了する。
+パッケージメタデータと製品バージョンは `Directory.Build.props` に集約され、pack 出力は `artifacts/` に置かれる。`release/**` ブランチへの push または手動実行で GitHub Actions が配布ライブラリと回帰テストをまとめて build し、その成果物で回帰テストと pack を行う。NuGet.org Trusted Publishing で取得した短期資格情報だけを使って公開する。CI は DemoApp の build と目視確認を行わない。公開の成立条件は次のとおりで、照合に失敗した成果物は送信しない。
+
+- ブランチは `release/<Version>` と一致し、`artifacts/` に対象版の `.nupkg` と `.snupkg` が各1件存在する。
+- 両成果物の nuspec で PackageId・版・リポジトリ URL・commit・branch と `net10.0` の公開依存関係をソースに照合する。`PrivateAssets=all` の参照は公開依存関係に含めない。
+- 通常パッケージには README・LICENSE・DLL・XML ドキュメント、シンボルパッケージには PDB を要求し、アイコンは元ファイルが存在する場合だけ要求する。公開前の成果物にパッケージ署名が含まれていないことも確認する。
+- 成果物全体と各 ZIP エントリの SHA256 をログへ残し、送信直前に両成果物全体のハッシュを再照合する。これにより、照合した成果物と送信対象の一致を確認する。重複版も公開失敗として扱う。
 
 公開後の直接参照元への反映は、公開 workflow とは別に `vava.config.json` の `consumerUpdates.targets` で定義する。共通の `scripts/update-nuget-consumer.ps1` は指定プロジェクトの直接参照を検査し、想定旧版または更新先版であることを全件確認してからバージョンを書き換える。復元・検証と変更許可パスは参照元ごとの設定が担う。Release 条件や Platform・RID、テスト起動方式が参照元ごとに異なるため、この境界は共通スクリプトへ集約しない。実行時の規約は [AGENTS.md](AGENTS.md#バージョン番号は触らない) を参照する。

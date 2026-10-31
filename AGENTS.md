@@ -54,7 +54,7 @@ gh workflow run publish.yml --ref release/x.y.z
 
 ## CI / リリース
 
-[.github/workflows/publish.yml](.github/workflows/publish.yml): `release/**` ブランチへの push（または手動 dispatch）で build → 回帰テスト → pack → NuGet.org Trusted Publishing で公開。`release/x.y.z` ブランチは `/vava` が作成する。GitHub Actions は SHA pin、権限は `contents: read` と `id-token: write` に限定し、長期 API キーは保存しない。workflow は pack 結果が対象パッケージ1件だけであることを公開前に検証する。
+[.github/workflows/publish.yml](.github/workflows/publish.yml): `release/**` ブランチへの push（または手動 dispatch）で build → 回帰テスト → pack → NuGet.org Trusted Publishing で公開。`release/x.y.z` ブランチは `/vava` が作成する。GitHub Actions は SHA pin、権限は `contents: read` と `id-token: write` に限定し、長期 API キーは保存しない。公開前の成果物照合と配布の境界は [DESIGN.md](DESIGN.md#ビルド・検証・配布の境界) を参照する。workflow やパッケージ構成を変更するときは、release ブランチ名・版・ソース情報・同梱ファイル・依存関係の照合と、送信直前のハッシュ再照合を維持する。既存版の重複公開は失敗として扱い、`--skip-duplicate` で隠さない。
 
 [.github/dependabot.yml](.github/dependabot.yml) は GitHub Actions、`global.json` の .NET SDK、全3プロジェクトの NuGet 依存を監視する。プロジェクトの追加・移動時は監視ディレクトリも同時に更新し、Avalonia 系はライブラリと DemoApp で同一バージョンを保つ。
 
