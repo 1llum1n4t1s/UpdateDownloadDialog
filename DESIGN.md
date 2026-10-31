@@ -69,7 +69,7 @@ Downloading -> 適用・再起動 | Available（キャンセル） | Failed
 
 - NuGet PackageId は `VelopackUpdateDialog.Avalonia`、AssemblyName・RootNamespace・公開 namespace は `VelopackUpdateDialog` とする。
 - Window → View → ViewModel の依存方向を保ち、更新ロジックは ViewModel に集約する。
-- すべての `UpdateState` は表示可能なパネルへ対応させる。派生表示プロパティを増やした場合は `OnStateChanged` から変更通知する。派生プロパティの通知引数は名前ごとに共有し、通知順を維持する。
+- すべての `UpdateState` は表示可能なパネルへ対応する。`OnStateChanged` が派生表示プロパティの変更を通知する。派生プロパティの通知引数は名前ごとに共有し、通知順を維持する。状態・表示の変更時の照合手順は [AGENTS.md](AGENTS.md#設計変更時の規約) を参照する。
 - アイコン・複合コンテンツの操作ボタンには、表示文言と同じ `Strings` の値をアクセシビリティ名として明示する。
 - 更新確認の再入防止は `_checkInFlight` で行う。呼び出し元トークンによる確認キャンセル時は `FinalOutcome` を `Cancelled` にし、Window が閉じるまで `Checking` 表示を維持する。
 - 公開 ViewModel の再利用時は、新しい確認・ダウンロードの開始時と `Available` / `UpToDate` の確定時に、過去の `FinalOutcome` / `FinalError` / `ErrorMessage` をリセットする。現在の close 結果と進行中判定へ過去操作の終端情報を持ち越さない。

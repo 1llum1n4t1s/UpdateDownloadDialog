@@ -173,6 +173,7 @@ await vm.CheckAsync();
 - ホストアプリは **Velopack でパッケージ化** (`vpk pack`) されている必要がある。`UpdateManager.IsInstalled` が `false` の場合 (= `vpk pack` を経ていない開発実行など)、通常の更新確認は最新版として扱う（`ShowAsync` は `UpdateOutcome.UpToDate`、ViewModel 直接利用では `State = UpdateState.UpToDate`）
 - ホストアプリの `Program.Main` 冒頭で `VelopackApp.Build().Run()` を呼ぶこと (Velopack 公式の事前要件)
 - TFM `net10.0` 以上
+- `ShowAsync` と ViewModel の公開状態変更 API は Avalonia の UI スレッドから呼ぶ。
 
 ## ロギング
 
@@ -195,7 +196,7 @@ options.LogEmitted += entry =>
 };
 ```
 
-`LogEmitted` を購読しなければログ項目は破棄される。通知は状態変更などを行ったスレッドで同期実行されるため、時間のかかる転送はホスト側で非同期化する。購読ハンドラが例外を投げても更新フローと他の購読者には影響しない。失敗時は後方互換の `Options.ErrorOccurred` からも同じ `Exception` が 1 回通知される。
+`LogEmitted` を購読しなければログ項目は生成されない。通知は状態変更などを行ったスレッドで同期実行されるため、時間のかかる転送はホスト側で非同期化する。`LogEmitted` の購読ハンドラが例外を投げても更新フローと他の購読者には影響しない。失敗時は後方互換の `Options.ErrorOccurred` からも同じ `Exception` が 1 回通知される。
 
 > ⚠️ **起動時の自動チェックを fire-and-forget (`_ = ShowAsync(...)`) で呼ぶ場合**、戻り値の `UpdateDialogResult` を見ないため、失敗を観測するには `Options.ErrorOccurred` または `Options.LogEmitted` を購読する。プロキシ遮断・TLS 失敗などを静かに見逃さないよう、自動チェック時は最低でもどちらかを購読することを推奨する。
 
@@ -203,7 +204,7 @@ options.LogEmitted += entry =>
 
 | 症状 | 確認ポイント |
 |---|---|
-| `ShowAsync` を呼んでも何も起きない | `manualCheck: true` で呼んでいるか / `SuppressUpToDateOnAutoCheck` が既定 (true) でないか / `IgnoredTagName` が現バージョンと一致していないか |
+| `ShowAsync` を呼んでも何も起きない | `manualCheck: true` で呼んでいるか / `SuppressUpToDateOnAutoCheck` が既定 (true) でないか / `IgnoredTagName` が利用可能な更新のバージョンと一致していないか |
 | 「最新版です」と出るが新版あるはず | ホストアプリが `vpk pack` 経由でインストール済みか (`UpdateManager.IsInstalled == true`) / `GithubSource` の URL / `prerelease` フラグ |
 | ダウンロードが 0% から進まない | `Options.LogEmitted` または `Options.ErrorOccurred` を購読して原因取得 / プロキシ・TLS 1.2+ / `accessToken` の有効性 |
 | 「このバージョンを無視」しても翌起動で再表示 | ホスト側で保存している `IgnoredTagName` を `Options.IgnoredTagName` に渡しているか (`v` プレフィックスと前後空白は正規化される) |
