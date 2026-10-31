@@ -110,5 +110,3 @@ Downloading -> 適用・再起動 | Available（キャンセル） | Failed
 - 両成果物の nuspec で PackageId・版・リポジトリ URL・commit・branch と `net10.0` の公開依存関係をソースに照合する。`PrivateAssets=all` の参照は公開依存関係に含めない。
 - 通常パッケージには README・LICENSE・DLL・XML ドキュメント、シンボルパッケージには PDB を要求し、アイコンは元ファイルが存在する場合だけ要求する。公開前の成果物にパッケージ署名が含まれていないことも確認する。
 - 成果物全体と各 ZIP エントリの SHA256 をログへ残し、送信直前に両成果物全体のハッシュを再照合する。これにより、照合した成果物と送信対象の一致を確認する。重複版も公開失敗として扱う。
-
-公開後の直接参照元への反映は、公開 workflow とは別に `vava.config.json` の `consumerUpdates.targets` で定義する。共通の `scripts/update-nuget-consumer.ps1` は指定プロジェクトの直接参照を検査し、想定旧版または更新先版であることを全件確認してからバージョンを書き換える。復元・検証と変更許可パスは参照元ごとの設定が担う。Release 条件や Platform・RID、テスト起動方式が参照元ごとに異なるため、この境界は共通スクリプトへ集約しない。実行時の規約は [AGENTS.md](AGENTS.md#バージョン番号は触らない) を参照する。
