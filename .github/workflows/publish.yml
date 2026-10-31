@@ -32,6 +32,68 @@ jobs:
       - name: Pack VelopackUpdateDialog.Avalonia
         run: dotnet pack src/VelopackUpdateDialog.Avalonia/VelopackUpdateDialog.Avalonia.csproj -c Release --no-build
 
+      - name: Verify packages before publishing
+        id: verify
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          [xml]$props = Get-Content -Raw Directory.Build.props
+          [xml]$project = Get-Content -Raw src/VelopackUpdateDialog.Avalonia/VelopackUpdateDialog.Avalonia.csproj
+          $version = [string]$props.Project.PropertyGroup.Version
+          if ($env:GITHUB_REF -cne "refs/heads/release/$version") { throw 'Release branch and package version differ.' }
+          $id = 'VelopackUpdateDialog.Avalonia'
+          $packages = @(Get-ChildItem -Path artifacts -Filter "$id.*.nupkg" -File)
+          $symbols = @(Get-ChildItem -Path artifacts -Filter "$id.*.snupkg" -File)
+          if ($packages.Count -ne 1 -or $symbols.Count -ne 1 -or
+              $packages[0].Name -cne "$id.$version.nupkg" -or $symbols[0].Name -cne "$id.$version.snupkg") {
+            throw 'Expected one package and one symbol package for the release version.'
+          }
+
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+          foreach ($file in @($packages[0], $symbols[0])) {
+            $zip = [IO.Compression.ZipFile]::OpenRead($file.FullName)
+            try {
+              $required = @("$id.nuspec")
+              if ($file.Extension -eq '.nupkg') {
+                $required += @('README.md', 'LICENSE', 'lib/net10.0/VelopackUpdateDialog.dll', 'lib/net10.0/VelopackUpdateDialog.xml')
+                if (Test-Path 'icon/app_icon.png') { $required += 'icon.png' }
+              } else {
+                $required += 'lib/net10.0/VelopackUpdateDialog.pdb'
+              }
+              foreach ($path in $required) {
+                if ($null -eq $zip.GetEntry($path)) { throw "Missing $path in $($file.Name)." }
+              }
+              if ($null -ne $zip.GetEntry('.signature.p7s')) { throw "Unexpected package signature in $($file.Name)." }
+              $reader = [IO.StreamReader]::new($zip.GetEntry("$id.nuspec").Open())
+              try { [xml]$nuspec = $reader.ReadToEnd() } finally { $reader.Dispose() }
+              $metadata = $nuspec.package.metadata
+              if ($metadata.id -cne $id -or $metadata.version -cne $version -or
+                  $metadata.repository.commit -cne $env:GITHUB_SHA -or
+                  $metadata.repository.branch -cne $env:GITHUB_REF -or
+                  $metadata.repository.url -cne 'https://github.com/1llum1n4t1s/UpdateDownloadDialog') {
+                throw "Package identity or source differs in $($file.Name)."
+              }
+              $groups = @($metadata.dependencies.group | Where-Object { $_.targetFramework -ceq 'net10.0' })
+              $references = @($project.Project.ItemGroup.PackageReference | Where-Object { $_.PrivateAssets -ne 'all' })
+              if ($groups.Count -ne 1 -or @($groups[0].dependency).Count -ne $references.Count) {
+                throw "Package framework or dependencies differ in $($file.Name)."
+              }
+              foreach ($reference in $references) {
+                $match = @($groups[0].dependency | Where-Object { $_.id -ceq $reference.Include -and $_.version -ceq $reference.Version })
+                if ($match.Count -ne 1) { throw "Dependency $($reference.Include) differs in $($file.Name)." }
+              }
+              Write-Output "Package $($file.Name) SHA256 $((Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash)"
+              foreach ($entry in $zip.Entries) {
+                $stream = $entry.Open()
+                try { $hash = (Get-FileHash -InputStream $stream -Algorithm SHA256).Hash } finally { $stream.Dispose() }
+                Write-Output "Entry $($entry.FullName) SHA256 $hash"
+              }
+            } finally { $zip.Dispose() }
+          }
+          "package=$($packages[0].FullName)" >> $env:GITHUB_OUTPUT
+          "packageHash=$((Get-FileHash -LiteralPath $packages[0].FullName -Algorithm SHA256).Hash)" >> $env:GITHUB_OUTPUT
+          "symbolHash=$((Get-FileHash -LiteralPath $symbols[0].FullName -Algorithm SHA256).Hash)" >> $env:GITHUB_OUTPUT
+
       - name: Authenticate to NuGet.org
         id: login
         uses: NuGet/login@8d196754b4036150537f80ac539e15c2f1028841 # v1.2.0
@@ -41,15 +103,17 @@ jobs:
       - name: Publish to NuGet
         env:
           NUGET_API_KEY: ${{ steps.login.outputs.NUGET_API_KEY }}
+          VERIFIED_PACKAGE: ${{ steps.verify.outputs.package }}
+          VERIFIED_PACKAGE_HASH: ${{ steps.verify.outputs.packageHash }}
+          VERIFIED_SYMBOL_HASH: ${{ steps.verify.outputs.symbolHash }}
         run: |
-          $packages = @(Get-ChildItem -Path artifacts -Filter 'VelopackUpdateDialog.Avalonia.*.nupkg' -File)
-          if ($packages.Count -ne 1) {
-            Write-Error "Expected exactly one VelopackUpdateDialog.Avalonia package, found $($packages.Count)."
-            exit 1
+          $symbol = [IO.Path]::ChangeExtension($env:VERIFIED_PACKAGE, '.snupkg')
+          if ((Get-FileHash -LiteralPath $env:VERIFIED_PACKAGE -Algorithm SHA256).Hash -cne $env:VERIFIED_PACKAGE_HASH -or
+              (Get-FileHash -LiteralPath $symbol -Algorithm SHA256).Hash -cne $env:VERIFIED_SYMBOL_HASH) {
+            throw 'Package or symbol package changed after verification.'
           }
-          dotnet nuget push $packages[0].FullName `
+          dotnet nuget push $env:VERIFIED_PACKAGE `
             --api-key $env:NUGET_API_KEY `
-            --source https://api.nuget.org/v3/index.json `
-            --skip-duplicate
+            --source https://api.nuget.org/v3/index.json
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
         shell: pwsh

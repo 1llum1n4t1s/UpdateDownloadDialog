@@ -50,14 +50,17 @@
         "remote": "origin",
         "reference": "VelopackUpdateDialog.Avalonia",
         "ready": "dotnet package search VelopackUpdateDialog.Avalonia --exact-match --source https://api.nuget.org/v3/index.json --format json",
-        "update": "pwsh -NoProfile -File ../UpdateDownloadDialog/scripts/update-nuget-consumer.ps1 -PackageId VelopackUpdateDialog.Avalonia -ProjectPaths 'src/Kiriha/Kiriha.csproj' -OldVersion {{OLD_VERSION}} -Version {{NEW_VERSION}} && dotnet restore Kiriha.slnx --force-evaluate --source https://api.nuget.org/v3/index.json --no-http-cache -p:Configuration=Release",
+        "update": "pwsh -NoProfile -File ../UpdateDownloadDialog/scripts/update-nuget-consumer.ps1 -PackageId VelopackUpdateDialog.Avalonia -ProjectPaths 'src/Kiriha/Kiriha.csproj' -OldVersion {{OLD_VERSION}} -Version {{NEW_VERSION}} && dotnet restore Kiriha.slnx --force-evaluate --source https://api.nuget.org/v3/index.json --no-http-cache -p:Configuration=Release && dotnet restore Kiriha.slnx --force-evaluate --source https://api.nuget.org/v3/index.json --no-http-cache -p:Configuration=Release -p:KagayoiSupportClientUsePackage=true",
         "allowedPaths": [
           "src/Kiriha/Kiriha.csproj",
           "src/Kiriha/packages.lock.json",
-          "tests/Kiriha.Tests/packages.lock.json"
+          "src/Kiriha/packages.project.lock.json",
+          "tests/Kiriha.Tests/packages.lock.json",
+          "tests/Kiriha.Tests/packages.project.lock.json"
         ],
         "verify": [
           "dotnet restore Kiriha.slnx --locked-mode --source https://api.nuget.org/v3/index.json --no-http-cache -p:Configuration=Release",
+          "dotnet restore Kiriha.slnx --locked-mode --source https://api.nuget.org/v3/index.json --no-http-cache -p:Configuration=Release -p:KagayoiSupportClientUsePackage=true",
           "dotnet test --project tests/Kiriha.Tests/Kiriha.Tests.csproj --configuration Release --no-restore -p:UseMicrosoftTestingPlatformRunner=true"
         ],
         "commitMessage": "VelopackUpdateDialog.Avaloniaを{{NEW_VERSION}}へ更新する"
