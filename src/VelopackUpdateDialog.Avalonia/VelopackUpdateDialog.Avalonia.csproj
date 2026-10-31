@@ -19,6 +19,6 @@
     <PackageReference Include="Avalonia" Version="12.1.4" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
     <PackageReference Include="Velopack" Version="1.2.161" />
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.402" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.403" PrivateAssets="all" />
   </ItemGroup>
 </Project>
