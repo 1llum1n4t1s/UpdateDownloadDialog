@@ -16,12 +16,44 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1 (pinned by SHA)
+        shell: pwsh
+        env:
+          CHECKOUT_TOKEN: ${{ github.token }}
+          CHECKOUT_REF: ${{ github.sha }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          git init .
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          git remote add origin "$env:GITHUB_SERVER_URL/$env:GITHUB_REPOSITORY.git"
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          $header = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes("x-access-token:$env:CHECKOUT_TOKEN"))
+          Write-Output "::add-mask::$header"
+          $env:GIT_CONFIG_COUNT = '1'
+          $env:GIT_CONFIG_KEY_0 = "http.$env:GITHUB_SERVER_URL/.extraheader"
+          $env:GIT_CONFIG_VALUE_0 = "AUTHORIZATION: basic $header"
+          try {
+            git fetch --force --tags origin $env:CHECKOUT_REF
+            if ($LASTEXITCODE) { exit $LASTEXITCODE }
+            git checkout --detach FETCH_HEAD
+            if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          } finally {
+            $env:GIT_CONFIG_COUNT = $null
+            $env:GIT_CONFIG_KEY_0 = $null
+            $env:GIT_CONFIG_VALUE_0 = $null
+          }
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68  # v6.0.0 (pinned by SHA)
-        with:
-          dotnet-version: '10.0.x'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $installRoot = Join-Path $env:RUNNER_TEMP 'release-dotnet'
+          $installer = Join-Path $env:RUNNER_TEMP 'dotnet-install.ps1'
+          Invoke-WebRequest 'https://raw.githubusercontent.com/actions/setup-dotnet/a98b56852c35b8e3190ac28c8c2271da59106c68/externals/install-dotnet.ps1' -OutFile $installer
+          if ((Get-FileHash -LiteralPath $installer -Algorithm SHA256).Hash -ne 'B224982626C6DDF7CE915D7D560B7060D3C42754EB621F8CC53B8C775C0CC6B5') { throw 'Pinned .NET installer SHA-256 mismatch.' }
+          & $installer -Channel 10.0 -InstallDir $installRoot -NoPath
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          "DOTNET_ROOT=$installRoot" >> $env:GITHUB_ENV
+          $installRoot >> $env:GITHUB_PATH
 
       - name: Build library and regression tests
         run: dotnet build tests/VelopackUpdateDialog.Avalonia.RegressionTests/VelopackUpdateDialog.Avalonia.RegressionTests.csproj -c Release
@@ -96,9 +128,29 @@ jobs:
 
       - name: Authenticate to NuGet.org
         id: login
-        uses: NuGet/login@8d196754b4036150537f80ac539e15c2f1028841 # v1.2.0
-        with:
-          user: ${{ vars.NUGET_USER }}
+        shell: pwsh
+        env:
+          NUGET_USER: ${{ vars.NUGET_USER }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if (-not $env:NUGET_USER -or -not $env:ACTIONS_ID_TOKEN_REQUEST_TOKEN -or -not $env:ACTIONS_ID_TOKEN_REQUEST_URL) {
+            throw 'NuGet user and GitHub OIDC permissions are required.'
+          }
+          Write-Output "::add-mask::$env:ACTIONS_ID_TOKEN_REQUEST_TOKEN"
+          try {
+            $url = "$env:ACTIONS_ID_TOKEN_REQUEST_URL&audience=$([uri]::EscapeDataString('https://www.nuget.org'))"
+            $oidc = Invoke-RestMethod -Uri $url -Headers @{ Authorization = "Bearer $env:ACTIONS_ID_TOKEN_REQUEST_TOKEN" }
+            if (-not $oidc.value) { throw 'Missing OIDC token.' }
+            Write-Output "::add-mask::$($oidc.value)"
+            $body = @{ username = $env:NUGET_USER; tokenType = 'ApiKey' } | ConvertTo-Json -Compress
+            $result = Invoke-RestMethod -Method Post -Uri 'https://www.nuget.org/api/v2/token' -Headers @{ Authorization = "Bearer $($oidc.value)" } -ContentType 'application/json' -Body $body -StatusCodeVariable nugetStatusCode
+            if ($nugetStatusCode -ne 200) { throw 'Unexpected NuGet token exchange status.' }
+            if (-not $result.apiKey -or $result.apiKey -match '[\r\n]') { throw 'Missing or invalid NuGet API key.' }
+            Write-Output "::add-mask::$($result.apiKey)"
+            "NUGET_API_KEY=$($result.apiKey)" >> $env:GITHUB_OUTPUT
+          } catch {
+            throw 'NuGet Trusted Publishing authentication failed.'
+          }
 
       - name: Publish to NuGet
         env:
