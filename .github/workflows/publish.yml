@@ -34,7 +34,15 @@ jobs:
           try {
             git fetch --force --tags origin $env:CHECKOUT_REF
             if ($LASTEXITCODE) { exit $LASTEXITCODE }
-            git checkout --detach FETCH_HEAD
+            # SourceLink は HEAD のブランチ名から nuspec の repository branch を決めるため、
+            # detached HEAD のままだと branch が欠落し、公開前の identity 照合で停止する。
+            # ブランチ起点の実行では GITHUB_REF と同名のローカルブランチを固定 SHA へ作る。
+            if ($env:GITHUB_REF -like 'refs/heads/*') {
+              $branchName = $env:GITHUB_REF.Substring('refs/heads/'.Length)
+              git checkout --force -B $branchName FETCH_HEAD
+            } else {
+              git checkout --detach FETCH_HEAD
+            }
             if ($LASTEXITCODE) { exit $LASTEXITCODE }
           } finally {
             $env:GIT_CONFIG_COUNT = $null
