@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Controls;
@@ -44,7 +45,7 @@ public partial class UpdateDialogWindow : Window
     {
         // デザイナでも DataContext を解決するためのダミー。
         // Velopack の UpdateManager にはダミー source を渡す。
-        return new UpdateDialogViewModel(new UpdateManager(new SimpleFileSource(new System.IO.DirectoryInfo(System.IO.Path.GetTempPath()))));
+        return new UpdateDialogViewModel(new UpdateManager(new SimpleFileSource(new DirectoryInfo(Path.GetTempPath()))));
     }
 
     /// <summary>
@@ -276,7 +277,7 @@ public partial class UpdateDialogWindow : Window
                 ExtendClientAreaToDecorationsHint = false;
                 WindowDecorations = WindowDecorations.Full;
                 CustomTitleBar.IsVisible = false;
-                TransparencyLevelHint = new[] { Avalonia.Controls.WindowTransparencyLevel.None };
+                TransparencyLevelHint = [WindowTransparencyLevel.None];
                 AcrylicBackdrop.IsVisible = false;
                 SolidBackdrop.IsVisible = true;
                 break;

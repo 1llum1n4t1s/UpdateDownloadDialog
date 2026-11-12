@@ -32,8 +32,18 @@
                  Text="{Binding Strings.CheckingMessage}"/>
     </StackPanel>
 
-    <!-- 新バージョン利用可能 -->
-    <StackPanel Orientation="Vertical" IsVisible="{Binding IsAvailable}">
+    <!-- 新バージョン利用可能 / ダウンロード中。
+         どちらも同じ「新バージョン + タグ」ヘッダーを表示するため 1 か所で定義し、
+         下段だけを状態ごとに切り替える。非表示の子は measure されないので、
+         各状態のレイアウトは個別パネルだった頃と同じになる。 -->
+    <StackPanel Orientation="Vertical">
+      <StackPanel.IsVisible>
+        <MultiBinding Converter="{x:Static BoolConverters.Or}">
+          <Binding Path="IsAvailable"/>
+          <Binding Path="IsDownloading"/>
+        </MultiBinding>
+      </StackPanel.IsVisible>
+
       <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,8">
         <Path Width="14" Height="14"
               Margin="0,0,8,0"
@@ -52,68 +62,51 @@
         </Border>
       </StackPanel>
 
-      <StackPanel Margin="0,8,0,0" Orientation="Horizontal" HorizontalAlignment="Center">
-        <Button x:Name="BtnDownload"
-                AutomationProperties.Name="{Binding Strings.DownloadAndInstall}"
-                Classes="primary"
-                Height="30"
-                HorizontalContentAlignment="Center"
-                VerticalContentAlignment="Center"
-                Click="OnDownloadAndInstall">
-          <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-            <Path Width="12" Height="12" Margin="0,0,8,0" Stretch="Uniform" VerticalAlignment="Center"
-                  Data="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"
-                  Fill="White"/>
-            <TextBlock Text="{Binding Strings.DownloadAndInstall}"
-                       VerticalAlignment="Center" Foreground="White"/>
-          </StackPanel>
-        </Button>
+      <Panel>
+        <StackPanel Margin="0,8,0,0" Orientation="Horizontal" HorizontalAlignment="Center"
+                    IsVisible="{Binding IsAvailable}">
+          <Button x:Name="BtnDownload"
+                  AutomationProperties.Name="{Binding Strings.DownloadAndInstall}"
+                  Classes="primary"
+                  Height="30"
+                  HorizontalContentAlignment="Center"
+                  VerticalContentAlignment="Center"
+                  Click="OnDownloadAndInstall">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+              <Path Width="12" Height="12" Margin="0,0,8,0" Stretch="Uniform" VerticalAlignment="Center"
+                    Data="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"
+                    Fill="White"/>
+              <TextBlock Text="{Binding Strings.DownloadAndInstall}"
+                         VerticalAlignment="Center" Foreground="White"/>
+            </StackPanel>
+          </Button>
 
-        <Button x:Name="BtnIgnore"
-                AutomationProperties.Name="{Binding Strings.IgnoreThisVersion}"
-                Classes="secondary"
-                Height="30"
-                Margin="8,0,0,0"
-                HorizontalContentAlignment="Center"
-                VerticalContentAlignment="Center"
-                IsVisible="{Binding AllowIgnoreVersion}"
-                Click="OnIgnoreVersion">
-          <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-            <Path Width="12" Height="12" Margin="0,0,8,0" Stretch="Uniform" VerticalAlignment="Center"
-                  Data="M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z"
-                  Fill="{DynamicResource UpdateDialog.ForegroundBrush}"/>
-            <TextBlock Text="{Binding Strings.IgnoreThisVersion}"
-                       VerticalAlignment="Center"/>
-          </StackPanel>
-        </Button>
-      </StackPanel>
-    </StackPanel>
+          <Button x:Name="BtnIgnore"
+                  AutomationProperties.Name="{Binding Strings.IgnoreThisVersion}"
+                  Classes="secondary"
+                  Height="30"
+                  Margin="8,0,0,0"
+                  HorizontalContentAlignment="Center"
+                  VerticalContentAlignment="Center"
+                  IsVisible="{Binding AllowIgnoreVersion}"
+                  Click="OnIgnoreVersion">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+              <Path Width="12" Height="12" Margin="0,0,8,0" Stretch="Uniform" VerticalAlignment="Center"
+                    Data="M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z"
+                    Fill="{DynamicResource UpdateDialog.ForegroundBrush}"/>
+              <TextBlock Text="{Binding Strings.IgnoreThisVersion}"
+                         VerticalAlignment="Center"/>
+            </StackPanel>
+          </Button>
+        </StackPanel>
 
-    <!-- ダウンロード中 -->
-    <StackPanel Orientation="Vertical" IsVisible="{Binding IsDownloading}">
-      <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,8">
-        <Path Width="14" Height="14"
-              Margin="0,0,8,0"
-              Stretch="Uniform"
-              VerticalAlignment="Center"
-              Data="{StaticResource UpdateDialog.InfoGeometry}"
-              Fill="{DynamicResource UpdateDialog.SuccessBrush}"/>
-        <TextBlock FontWeight="Bold" FontSize="14"
-                   VerticalAlignment="Center"
-                   Text="{Binding Strings.AvailableHeader}"/>
-        <Border Margin="4,0,0,0" Height="20" CornerRadius="10"
-                VerticalAlignment="Center"
-                Background="{DynamicResource UpdateDialog.AccentBrush}"
-                Effect="drop-shadow(0 0 6 #40000000)">
-          <TextBlock Margin="8,0" Text="{Binding AvailableTagName}" FontSize="12" Foreground="White" VerticalAlignment="Center"/>
-        </Border>
-      </StackPanel>
-
-      <!-- この Width=500 と Grid の Margin=16 は UpdateDialogDefaults.ContentMinWidth (540) の
-           算出根拠になっている。変更するときは両方を合わせて直すこと。 -->
-      <ProgressBar Minimum="0" Maximum="100"
-                   Value="{Binding DownloadProgress}"
-                   Height="8" Margin="0,8,0,0" Width="500"/>
+        <!-- この Width=500 と Grid の Margin=16 は UpdateDialogDefaults.ContentMinWidth (540) の
+             算出根拠になっている。変更するときは両方を合わせて直すこと。 -->
+        <ProgressBar Minimum="0" Maximum="100"
+                     Value="{Binding DownloadProgress}"
+                     Height="8" Margin="0,8,0,0" Width="500"
+                     IsVisible="{Binding IsDownloading}"/>
+      </Panel>
     </StackPanel>
 
     <!-- 最新版 -->
