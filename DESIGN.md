@@ -4,7 +4,7 @@
 
 ## 目的と範囲
 
-このリポジトリは、Avalonia 12 / `net10.0` のホストアプリへ Velopack の更新確認 UI と更新実行フローを組み込む NuGet パッケージを提供する。ホストは完成形の Window、任意 Window に埋め込む UserControl、状態機械だけを持つ ViewModel のいずれかを選べる。
+このリポジトリは、Avalonia 12 / `net11.0` のホストアプリへ Velopack の更新確認 UI と更新実行フローを組み込む NuGet パッケージを提供する。ホストは完成形の Window、任意 Window に埋め込む UserControl、状態機械だけを持つ ViewModel のいずれかを選べる。
 
 パッケージが担当するのは、更新確認、状態表示、ダウンロード、適用と再起動の指示、最終結果の通知である。更新元と `UpdateManager` の構成、無視バージョンの永続化、エラーの外部送信、Velopack によるアプリのパッケージ化と署名はホスト側の責務である。
 
@@ -107,6 +107,6 @@ Downloading -> 適用・再起動 | Available（キャンセル） | Failed
 パッケージメタデータと製品バージョンは `Directory.Build.props` に集約され、pack 出力は `artifacts/` に置かれる。`release/**` ブランチへの push または手動実行で GitHub Actions が配布ライブラリと回帰テストをまとめて build し、その成果物で回帰テストと pack を行う。NuGet.org Trusted Publishing で取得した短期資格情報だけを使って公開する。CI は DemoApp の build と目視確認を行わない。公開の成立条件は次のとおりで、照合に失敗した成果物は送信しない。
 
 - ブランチは `release/<Version>` と一致し、`artifacts/` に対象版の `.nupkg` と `.snupkg` が各1件存在する。
-- 両成果物の nuspec で PackageId・版・リポジトリ URL・commit・branch と `net10.0` の公開依存関係をソースに照合する。`PrivateAssets=all` の参照は公開依存関係に含めない。
+- 両成果物の nuspec で PackageId・版・リポジトリ URL・commit・branch と `net11.0` の公開依存関係をソースに照合する。`PrivateAssets=all` の参照は公開依存関係に含めない。
 - 通常パッケージには README・LICENSE・DLL・XML ドキュメント、シンボルパッケージには PDB を要求し、アイコンは元ファイルが存在する場合だけ要求する。公開前の成果物にパッケージ署名が含まれていないことも確認する。
 - 成果物全体と各 ZIP エントリの SHA256 をログへ残し、送信直前に両成果物全体のハッシュを再照合する。これにより、照合した成果物と送信対象の一致を確認する。重複版も公開失敗として扱う。

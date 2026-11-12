@@ -48,9 +48,9 @@ jobs:
           $ErrorActionPreference = 'Stop'
           $installRoot = Join-Path $env:RUNNER_TEMP 'release-dotnet'
           $installer = Join-Path $env:RUNNER_TEMP 'dotnet-install.ps1'
-          Invoke-WebRequest 'https://raw.githubusercontent.com/actions/setup-dotnet/a98b56852c35b8e3190ac28c8c2271da59106c68/externals/install-dotnet.ps1' -OutFile $installer
-          if ((Get-FileHash -LiteralPath $installer -Algorithm SHA256).Hash -ne 'B224982626C6DDF7CE915D7D560B7060D3C42754EB621F8CC53B8C775C0CC6B5') { throw 'Pinned .NET installer SHA-256 mismatch.' }
-          & $installer -Channel 10.0 -InstallDir $installRoot -NoPath
+          Invoke-WebRequest 'https://raw.githubusercontent.com/actions/setup-dotnet/0f4a354dd5547a28c70b7853dbd95d5b67886e73/externals/install-dotnet.ps1' -OutFile $installer
+          if ((Get-FileHash -LiteralPath $installer -Algorithm SHA256).Hash -ne '718A265CA5AE2ACEE0FC1E8B5146E32A8D535F8D666E3F7C875D9606C3753987') { throw 'Pinned .NET installer SHA-256 mismatch.' }
+          & $installer -Channel 11.0 -InstallDir $installRoot -NoPath
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           "DOTNET_ROOT=$installRoot" >> $env:GITHUB_ENV
           $installRoot >> $env:GITHUB_PATH
@@ -87,10 +87,10 @@ jobs:
             try {
               $required = @("$id.nuspec")
               if ($file.Extension -eq '.nupkg') {
-                $required += @('README.md', 'LICENSE', 'lib/net10.0/VelopackUpdateDialog.dll', 'lib/net10.0/VelopackUpdateDialog.xml')
+                $required += @('README.md', 'LICENSE', 'lib/net11.0/VelopackUpdateDialog.dll', 'lib/net11.0/VelopackUpdateDialog.xml')
                 if (Test-Path 'icon/app_icon.png') { $required += 'icon.png' }
               } else {
-                $required += 'lib/net10.0/VelopackUpdateDialog.pdb'
+                $required += 'lib/net11.0/VelopackUpdateDialog.pdb'
               }
               foreach ($path in $required) {
                 if ($null -eq $zip.GetEntry($path)) { throw "Missing $path in $($file.Name)." }
@@ -105,7 +105,7 @@ jobs:
                   $metadata.repository.url -cne 'https://github.com/1llum1n4t1s/UpdateDownloadDialog') {
                 throw "Package identity or source differs in $($file.Name)."
               }
-              $groups = @($metadata.dependencies.group | Where-Object { $_.targetFramework -ceq 'net10.0' })
+              $groups = @($metadata.dependencies.group | Where-Object { $_.targetFramework -ceq 'net11.0' })
               $references = @($project.Project.ItemGroup.PackageReference | Where-Object { $_.PrivateAssets -ne 'all' })
               if ($groups.Count -ne 1 -or @($groups[0].dependency).Count -ne $references.Count) {
                 throw "Package framework or dependencies differ in $($file.Name)."

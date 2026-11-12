@@ -10,7 +10,7 @@ Avalonia 12 で動く **Velopack 自動更新ダイアログ** の再利用可�
 dotnet add package VelopackUpdateDialog.Avalonia
 ```
 
-依存: `Avalonia 12.1.4+`, `CommunityToolkit.Mvvm 8.4.2+`, `Velopack 1.2.161+`, TFM `net10.0`。
+依存: `Avalonia 12.1.6+`, `CommunityToolkit.Mvvm 8.4.2+`, `Velopack 1.2.161+`, TFM `net11.0`。
 
 > 📦 **PackageId と namespace について**: NuGet パッケージ名は `VelopackUpdateDialog.Avalonia` ですが、C# namespace は `VelopackUpdateDialog`（`.Avalonia` 接尾辞なし）です。将来の WPF/WinForms 派生パッケージとの namespace 共有を見越した設計です。
 
@@ -172,7 +172,7 @@ await vm.CheckAsync();
 
 - ホストアプリは **Velopack でパッケージ化** (`vpk pack`) されている必要がある。`UpdateManager.IsInstalled` が `false` の場合 (= `vpk pack` を経ていない開発実行など)、通常の更新確認は最新版として扱う（`ShowAsync` は `UpdateOutcome.UpToDate`、ViewModel 直接利用では `State = UpdateState.UpToDate`）
 - ホストアプリの `Program.Main` 冒頭で `VelopackApp.Build().Run()` を呼ぶこと (Velopack 公式の事前要件)
-- TFM `net10.0` 以上
+- TFM `net11.0` 以上
 - `ShowAsync` と ViewModel の公開状態変更 API は Avalonia の UI スレッドから呼ぶ。
 
 ## ロギング
