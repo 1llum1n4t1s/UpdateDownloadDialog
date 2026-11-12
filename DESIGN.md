@@ -104,7 +104,7 @@ Downloading -> 適用・再起動 | Available（キャンセル） | Failed
 
 `VelopackUpdateDialog.Avalonia.slnx` は配布ライブラリ、DemoApp、実行型回帰テストから成る。ローカルのビルド・回帰テスト・目視確認の手順は [AGENTS.md](AGENTS.md#ビルド--実行コマンド) を参照する。
 
-パッケージメタデータと製品バージョンは `Directory.Build.props` に集約され、pack 出力は `artifacts/` に置かれる。`release/**` ブランチへの push または手動実行で GitHub Actions が配布ライブラリと回帰テストをまとめて build し、その成果物で回帰テストと pack を行う。NuGet.org Trusted Publishing で取得した短期資格情報だけを使って公開する。CI は DemoApp の build と目視確認を行わない。公開の成立条件は次のとおりで、照合に失敗した成果物は送信しない。
+パッケージメタデータと製品バージョンは `Directory.Build.props` に集約され、pack 出力は `artifacts/` に置かれる。`release/**` ブランチへの push または手動実行で GitHub Actions が配布ライブラリと回帰テストをまとめて build し、その成果物で回帰テストと pack を行う。workflow は第三者 Action に依存せず、固定 SHA の commit を checkout し（ブランチ起点ではその SHA へ同名ローカルブランチを作り、SourceLink が branch を nuspec へ記録できるようにする）、SHA-256 を照合した公式インストーラーで .NET を導入する。NuGet.org Trusted Publishing では GitHub OIDC トークンから取得した短期資格情報だけを使って公開する。CI は DemoApp の build と目視確認を行わない。公開の成立条件は次のとおりで、照合に失敗した成果物は送信しない。
 
 - ブランチは `release/<Version>` と一致し、`artifacts/` に対象版の `.nupkg` と `.snupkg` が各1件存在する。
 - 両成果物の nuspec で PackageId・版・リポジトリ URL・commit・branch と `net11.0` の公開依存関係をソースに照合する。`PrivateAssets=all` の参照は公開依存関係に含めない。
