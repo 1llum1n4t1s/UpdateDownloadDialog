@@ -21,8 +21,8 @@ dotnet run --project samples/DemoApp/DemoApp.csproj
 # NuGet パッケージ生成（artifacts/ に .nupkg + .snupkg が出力される）
 dotnet pack src/VelopackUpdateDialog.Avalonia/VelopackUpdateDialog.Avalonia.csproj -c Release
 
-# NuGet へ公開（release/** ブランチから Trusted Publishing workflow を実行）
-gh workflow run publish.yml --ref release/x.y.z
+# NuGet へ公開は main のコミットに付けた軽量タグ vx.y.z の push で Trusted Publishing workflow が起動する（やり直しは既存タグを --ref に指定）
+gh workflow run publish.yml --ref vx.y.z
 ```
 
 - **.NET SDK の選択基準は [global.json](global.json) の `11.0.100` で、`latestFeature` ロールフォワードを許可**する。TFM は `net11.0`。
@@ -50,7 +50,7 @@ gh workflow run publish.yml --ref release/x.y.z
 
 ## CI / リリース
 
-[.github/workflows/publish.yml](.github/workflows/publish.yml): `release/**` ブランチへの push（または手動 dispatch）で build → 回帰テスト → pack → NuGet.org Trusted Publishing で公開。`release/x.y.z` ブランチは `/vava` が作成する。publish.yml は第三者 Action を使わず、checkout・.NET 導入（SHA pin した公式インストーラーの SHA-256 照合）・NuGet OIDC 認証をインライン pwsh で行う。ブランチ起点の実行では SourceLink が branch を出力できるよう、`GITHUB_REF` と同名のローカルブランチを固定 SHA へ作る。他の workflow の Action は SHA pin、権限は `contents: read` と `id-token: write` に限定し、長期 API キーは保存しない。公開前の成果物照合と配布の境界は [DESIGN.md](DESIGN.md#ビルド・検証・配布の境界) を参照する。workflow やパッケージ構成を変更するときは、release ブランチ名・版・ソース情報・同梱ファイル・依存関係の照合と、送信直前のハッシュ再照合を維持する。既存版の重複公開は失敗として扱い、`--skip-duplicate` で隠さない。
+[.github/workflows/publish.yml](.github/workflows/publish.yml): main のコミットに付けた軽量タグ `vX.Y.Z` の push（または既存タグを `--ref` に指定した手動 dispatch）で、タグ・祖先・版の検証 → build → 回帰テスト → pack → NuGet.org Trusted Publishing で公開。release ブランチと GitHub Release は使わず、配信タグは `/vava` が作成する。publish.yml は第三者 Action を使わず、checkout・.NET 導入（SHA pin した公式インストーラーの SHA-256 照合）・NuGet OIDC 認証をインライン pwsh で行う。固定 SHA は detached HEAD で checkout するため、nuspec の repository branch は空であることを照合する。他の workflow の Action は SHA pin、権限は `contents: read` と `id-token: write` に限定し、長期 API キーは保存しない。公開前の成果物照合と配布の境界は [DESIGN.md](DESIGN.md#ビルド・検証・配布の境界) を参照する。workflow やパッケージ構成を変更するときは、配信タグ名・版・ソース情報・同梱ファイル・依存関係の照合と、送信直前のハッシュ再照合を維持する。既存版の重複公開は失敗として扱い、`--skip-duplicate` で隠さない。
 
 [.github/dependabot.yml](.github/dependabot.yml) は GitHub Actions、`global.json` の .NET SDK、全3プロジェクトの NuGet 依存を監視する。プロジェクトの追加・移動時は監視ディレクトリも同時に更新し、Avalonia 系はライブラリと DemoApp で同一バージョンを保つ。
 

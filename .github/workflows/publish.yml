@@ -2,8 +2,9 @@ name: Publish to NuGet
 
 on:
   push:
-    branches:
-      - 'release/**'
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+  # やり直し専用: gh workflow run publish.yml --ref vx.y.z（タグ以外の ref は検証で失敗する）
   workflow_dispatch:
 
 # 最小権限: checkout 用の read と、NuGet.org Trusted Publishing 用の OIDC token 発行だけを許可する
@@ -34,21 +35,41 @@ jobs:
           try {
             git fetch --force --tags origin $env:CHECKOUT_REF
             if ($LASTEXITCODE) { exit $LASTEXITCODE }
-            # SourceLink は HEAD のブランチ名から nuspec の repository branch を決めるため、
-            # detached HEAD のままだと branch が欠落し、公開前の identity 照合で停止する。
-            # ブランチ起点の実行では GITHUB_REF と同名のローカルブランチを固定 SHA へ作る。
-            if ($env:GITHUB_REF -like 'refs/heads/*') {
-              $branchName = $env:GITHUB_REF.Substring('refs/heads/'.Length)
-              git checkout --force -B $branchName FETCH_HEAD
-            } else {
-              git checkout --detach FETCH_HEAD
-            }
+            # 配信はタグ起点で、固定 SHA を detached HEAD で checkout する。SourceLink は HEAD のブランチ名から
+            # nuspec の repository branch を決めるため、この経路では branch は記録されない（公開前の照合で空であることを確認する）。
+            git checkout --detach FETCH_HEAD
             if ($LASTEXITCODE) { exit $LASTEXITCODE }
           } finally {
             $env:GIT_CONFIG_COUNT = $null
             $env:GIT_CONFIG_KEY_0 = $null
             $env:GIT_CONFIG_VALUE_0 = $null
           }
+
+      # 公開は main の祖先 commit に付けた軽量タグ vx.y.z の Version からだけ行う。push / workflow_dispatch の
+      # どちらでも必須にし、skip させない。NuGet は版番号を永久に予約するため、誤公開は不可逆。
+      - name: Verify release tag and Version
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ($env:GITHUB_REF_TYPE -ne 'tag') { throw "This workflow must run on a 'vx.y.z' tag. Current ref: '$env:GITHUB_REF'." }
+          if ($env:GITHUB_REF_NAME -notmatch '^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$') { throw "Tag '$env:GITHUB_REF_NAME' is not a strict 'vx.y.z' tag." }
+          if ($env:GITHUB_SHA -notmatch '^[0-9a-f]{40}$') { throw 'Unexpected GITHUB_SHA.' }
+          $expectedVersion = $env:GITHUB_REF_NAME -replace '^v', ''
+          # 軽量タグで、いまもこの commit を指すこと
+          $tagRef = gh api "repos/$($env:GITHUB_REPOSITORY)/git/ref/tags/$($env:GITHUB_REF_NAME)" --jq '.object.type + " " + .object.sha'
+          if ($LASTEXITCODE) { throw 'Failed to read the tag ref.' }
+          if ($tagRef -ne "commit $($env:GITHUB_SHA)") { throw "Tag is not a lightweight tag pointing at $($env:GITHUB_SHA) ($tagRef)." }
+          # 既定ブランチの祖先であること（compare API）
+          $default = gh api "repos/$($env:GITHUB_REPOSITORY)" --jq .default_branch
+          if ($LASTEXITCODE -or -not $default) { throw 'Failed to read the default branch.' }
+          $cmp = gh api "repos/$($env:GITHUB_REPOSITORY)/compare/$($env:GITHUB_SHA)...$($default)?per_page=1" --jq '.status + " " + (.behind_by | tostring)'
+          if ($LASTEXITCODE) { throw 'Failed to compare with the default branch.' }
+          if ($cmp -notin @('ahead 0', 'identical 0')) { throw "Tag commit is not an ancestor of '$default' ($cmp)." }
+          $propsVersion = ([xml](Get-Content Directory.Build.props)).Project.PropertyGroup.Version
+          if ($propsVersion -ne $expectedVersion) { throw "Directory.Build.props Version='$propsVersion' does not match tag 'v$expectedVersion'. Update <Version> before tagging." }
+          Write-Host "Version OK: Directory.Build.props=$propsVersion matches tag v$expectedVersion"
 
       - name: Setup .NET
         shell: pwsh
@@ -80,7 +101,7 @@ jobs:
           [xml]$props = Get-Content -Raw Directory.Build.props
           [xml]$project = Get-Content -Raw src/VelopackUpdateDialog.Avalonia/VelopackUpdateDialog.Avalonia.csproj
           $version = [string]$props.Project.PropertyGroup.Version
-          if ($env:GITHUB_REF -cne "refs/heads/release/$version") { throw 'Release branch and package version differ.' }
+          if ($env:GITHUB_REF_TYPE -cne 'tag' -or $env:GITHUB_REF_NAME -cne "v$version") { throw 'Release tag and package version differ.' }
           $id = 'VelopackUpdateDialog.Avalonia'
           $packages = @(Get-ChildItem -Path artifacts -Filter "$id.*.nupkg" -File)
           $symbols = @(Get-ChildItem -Path artifacts -Filter "$id.*.snupkg" -File)
@@ -109,7 +130,7 @@ jobs:
               $metadata = $nuspec.package.metadata
               if ($metadata.id -cne $id -or $metadata.version -cne $version -or
                   $metadata.repository.commit -cne $env:GITHUB_SHA -or
-                  $metadata.repository.branch -cne $env:GITHUB_REF -or
+                  -not [string]::IsNullOrEmpty([string]$metadata.repository.branch) -or
                   $metadata.repository.url -cne 'https://github.com/1llum1n4t1s/UpdateDownloadDialog') {
                 throw "Package identity or source differs in $($file.Name)."
               }

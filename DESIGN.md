@@ -104,9 +104,9 @@ Downloading -> 適用・再起動 | Available（キャンセル） | Failed
 
 `VelopackUpdateDialog.Avalonia.slnx` は配布ライブラリ、DemoApp、実行型回帰テストから成る。ローカルのビルド・回帰テスト・目視確認の手順は [AGENTS.md](AGENTS.md#ビルド--実行コマンド) を参照する。
 
-パッケージメタデータと製品バージョンは `Directory.Build.props` に集約され、pack 出力は `artifacts/` に置かれる。`release/**` ブランチへの push または手動実行で GitHub Actions が配布ライブラリと回帰テストをまとめて build し、その成果物で回帰テストと pack を行う。workflow は第三者 Action に依存せず、固定 SHA の commit を checkout し（ブランチ起点ではその SHA へ同名ローカルブランチを作り、SourceLink が branch を nuspec へ記録できるようにする）、SHA-256 を照合した公式インストーラーで .NET を導入する。NuGet.org Trusted Publishing では GitHub OIDC トークンから取得した短期資格情報だけを使って公開する。CI は DemoApp の build と目視確認を行わない。公開の成立条件は次のとおりで、照合に失敗した成果物は送信しない。
+パッケージメタデータと製品バージョンは `Directory.Build.props` に集約され、pack 出力は `artifacts/` に置かれる。main のコミットに付けた軽量タグ `vX.Y.Z` の push または手動実行で GitHub Actions が、先頭でタグであること・厳密な形・軽量タグが実行 commit を指すこと・既定ブランチの祖先であること・`Directory.Build.props` の版との一致を検査し、配布ライブラリと回帰テストをまとめて build し、その成果物で回帰テストと pack を行う。workflow は第三者 Action に依存せず、固定 SHA の commit を checkout し（detached HEAD のため SourceLink は branch を nuspec へ記録しない）、SHA-256 を照合した公式インストーラーで .NET を導入する。NuGet.org Trusted Publishing では GitHub OIDC トークンから取得した短期資格情報だけを使って公開する。CI は DemoApp の build と目視確認を行わない。公開の成立条件は次のとおりで、照合に失敗した成果物は送信しない。
 
-- ブランチは `release/<Version>` と一致し、`artifacts/` に対象版の `.nupkg` と `.snupkg` が各1件存在する。
-- 両成果物の nuspec で PackageId・版・リポジトリ URL・commit・branch と `net11.0` の公開依存関係をソースに照合する。`PrivateAssets=all` の参照は公開依存関係に含めない。
+- ref は軽量タグ `v<Version>` と一致し、`artifacts/` に対象版の `.nupkg` と `.snupkg` が各1件存在する。
+- 両成果物の nuspec で PackageId・版・リポジトリ URL・commit と（branch が空であること） `net11.0` の公開依存関係をソースに照合する。`PrivateAssets=all` の参照は公開依存関係に含めない。
 - 通常パッケージには README・LICENSE・DLL・XML ドキュメント、シンボルパッケージには PDB を要求し、アイコンは元ファイルが存在する場合だけ要求する。公開前の成果物にパッケージ署名が含まれていないことも確認する。
 - 成果物全体と各 ZIP エントリの SHA256 をログへ残し、送信直前に両成果物全体のハッシュを再照合する。これにより、照合した成果物と送信対象の一致を確認する。重複版も公開失敗として扱う。
